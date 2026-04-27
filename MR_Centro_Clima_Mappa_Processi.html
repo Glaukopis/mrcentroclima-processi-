@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>MR Centro Clima — Mappa Processi e Persone</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a;
+    --panel:#ffffff;
+    --soft:#f1f5f9;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --border:#e2e8f0;
+    --accent:#0ea5e9;
+    --doc:#dc2626;
+    --doc-bg:#fee2e2;
+    --shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.04);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--soft);line-height:1.5}
+  header{
+    background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#0ea5e9 100%);
+    color:#fff;padding:24px 36px;box-shadow:var(--shadow);
+  }
+  header h1{margin:0;font-size:22px;letter-spacing:.3px;font-weight:700}
+  header p{margin:6px 0 0;opacity:.85;font-size:13.5px}
+  .wrap{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 84px)}
+  aside{background:#fff;border-right:1px solid var(--border);padding:18px 14px;position:sticky;top:0;align-self:start;height:calc(100vh - 84px);overflow-y:auto}
+  aside h3{margin:6px 8px 8px;font-size:10.5px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;font-weight:700}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 12px;border-radius:8px;cursor:pointer;
+    font-size:13.5px;color:var(--ink);user-select:none;
+    border:1px solid transparent;
+  }
+  .nav-item:hover{background:var(--soft)}
+  .nav-item.active{background:#e0f2fe;border-color:#bae6fd;color:#0369a1;font-weight:600}
+  .nav-item .num{
+    width:22px;height:22px;border-radius:50%;background:var(--soft);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0;
+  }
+  .nav-item.active .num{background:#0369a1;color:#fff}
+  .filter-block{padding:8px 6px;border-top:1px solid var(--border);margin-top:14px}
+  .filter-block label{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12.5px}
+  .filter-block label:hover{background:var(--soft)}
+  .filter-block input{accent-color:var(--accent);flex-shrink:0}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+  .filter-actions{display:flex;gap:6px;padding:6px 8px}
+  .filter-actions button{
+    flex:1;font-size:11px;padding:5px;border-radius:6px;border:1px solid var(--border);
+    background:#fff;color:var(--muted);cursor:pointer;
+  }
+  .filter-actions button:hover{background:var(--soft)}
+
+  main{padding:24px 32px;max-width:1280px}
+  .breadcrumb{font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;font-weight:600}
+  h2.process-title{margin:0 0 4px;font-size:22px;font-weight:700}
+  .process-desc{color:var(--muted);margin:0 0 18px;font-size:14px;max-width:820px}
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  .pill{
+    padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;
+    background:var(--soft);color:var(--ink);border:1px solid var(--border);
+    display:inline-flex;align-items:center;gap:6px;
+  }
+
+  /* Swimlane */
+  .swimlane{
+    background:#fff;border-radius:14px;padding:22px;border:1px solid var(--border);
+    margin-bottom:22px;box-shadow:var(--shadow);overflow-x:auto;
+  }
+  .swimlane h4{margin:0 0 16px;font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+  .lanes{display:flex;flex-direction:column;gap:12px;min-width:880px}
+  .lane{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:stretch}
+  .lane-label{
+    padding:10px 14px;border-radius:10px;font-weight:600;font-size:13px;
+    display:flex;flex-direction:column;gap:2px;
+  }
+  .lane-label .lane-role{font-size:10.5px;font-weight:500;opacity:.75}
+  .steps{
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    background:var(--soft);border-radius:10px;padding:10px;border:1px dashed var(--border);
+    min-height:60px;
+  }
+  .step{
+    background:#fff;border-radius:8px;padding:8px 11px;font-size:12.5px;
+    border:1px solid var(--border);box-shadow:0 1px 2px rgba(15,23,42,.04);
+    cursor:default;display:flex;align-items:center;gap:7px;max-width:260px;
+  }
+  .step .step-num{
+    width:18px;height:18px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;
+  }
+  .step.dimmed{opacity:.18}
+  .arrow{color:var(--muted);font-size:16px;font-weight:300;flex-shrink:0}
+
+  /* Detail table */
+  table.raci{
+    width:100%;border-collapse:separate;border-spacing:0;background:#fff;
+    border-radius:14px;overflow:hidden;border:1px solid var(--border);
+    box-shadow:var(--shadow);font-size:13px;
+  }
+  table.raci th{
+    text-align:left;padding:12px 14px;background:#f8fafc;color:var(--muted);
+    font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--border);
+  }
+  table.raci td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+  table.raci tr:last-child td{border-bottom:none}
+  table.raci tr.dimmed{opacity:.22}
+  table.raci .activity{font-weight:500;color:var(--ink)}
+  table.raci .num-cell{color:var(--muted);font-weight:600;font-size:12px;width:34px}
+  .person-pill{
+    padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  }
+  .person-pill .person-init{
+    width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    font-size:9px;font-weight:700;color:#fff;
+  }
+
+  /* Documents block */
+  .docs-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;
+  }
+  .doc-card{
+    background:#fff;border:1px solid var(--border);border-radius:10px;padding:13px;
+    border-left:4px solid var(--doc);
+  }
+  .doc-card .doc-name{font-weight:700;font-size:13px;margin-bottom:3px;color:var(--doc)}
+  .doc-card .doc-when{font-size:12px;color:var(--muted)}
+
+  section.block{margin-top:24px}
+  section.block > h3{
+    font-size:12.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);
+    margin:0 0 10px;font-weight:700;
+  }
+
+  /* Person view */
+  .people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-top:8px}
+  .person-card{
+    background:#fff;border-radius:14px;padding:18px;border:1px solid var(--border);
+    box-shadow:var(--shadow);border-top:5px solid var(--accent);
+  }
+  .person-card .person-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .person-card .avatar{
+    width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:#fff;font-size:15px;flex-shrink:0;
+  }
+  .person-card .person-name{font-size:15px;font-weight:700;margin:0}
+  .person-card .person-role{font-size:12px;color:var(--muted);margin:1px 0 0}
+  .person-duties{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .duty-block{padding:8px 0;border-top:1px solid var(--border)}
+  .duty-block:first-child{border-top:none;padding-top:0}
+  .duty-process{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+  .duty-list{margin:0;padding-left:18px;font-size:12.5px}
+  .duty-list li{margin:2px 0}
+
+  /* Sistema, tempo, critical markers */
+  .meta-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .meta-tag{
+    font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:6px;
+    display:inline-flex;align-items:center;gap:4px;letter-spacing:.2px;
+  }
+  .meta-tag.sys-gestionale{background:#e0f2fe;color:#0369a1}
+  .meta-tag.sys-app{background:#dcfce7;color:#15803d}
+  .meta-tag.sys-excel{background:#fef3c7;color:#a16207}
+  .meta-tag.sys-cartaceo{background:#fee2e2;color:#b91c1c}
+  .meta-tag.sys-email{background:#ede9fe;color:#6d28d9}
+  .meta-tag.sys-portale{background:#cffafe;color:#0e7490}
+  .meta-tag.sys-default{background:#f1f5f9;color:#475569}
+  .meta-tag.tempo{background:#f1f5f9;color:#475569}
+  .meta-tag.critico{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+  .meta-tag.missing{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+  tr.is-missing{background:#fff7ed}
+  tr.is-missing td:first-child::before{background:#9a3412 !important}
+  tr.is-missing .activity::before{
+    content:"MANCA OGGI · ";font-size:10px;font-weight:800;color:#9a3412;
+    letter-spacing:.6px;margin-right:4px;
+  }
+  tr.has-issue td:first-child{position:relative}
+  tr.has-issue td:first-child::before{
+    content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:#dc2626;
+  }
+
+  .issue-banner{
+    background:#fef2f2;border:1px solid #fecaca;border-left:5px solid #dc2626;
+    border-radius:10px;padding:14px 16px;margin-bottom:12px;
+  }
+  .issue-banner .issue-title{
+    font-weight:700;font-size:13px;color:#b91c1c;margin:0 0 4px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .issue-banner .issue-title::before{content:"⚠";font-size:16px}
+  .issue-banner .issue-desc{font-size:13px;color:#7f1d1d;margin:0 0 6px}
+  .issue-banner .issue-fix{font-size:12.5px;color:#0f172a;margin:0;padding:8px 10px;background:#fff;border-radius:6px;border:1px solid #fecaca}
+  .issue-banner .issue-fix strong{color:#15803d}
+
+  /* Mermaid flowchart container */
+  .flowchart-wrap{
+    background:#fff;border-radius:14px;padding:22px;border:1px solid var(--border);
+    box-shadow:var(--shadow);overflow-x:auto;
+  }
+  .flowchart-wrap .mermaid{display:flex;justify-content:center;min-width:600px}
+  .flowchart-wrap svg{max-width:100%;height:auto}
+  .flow-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+  .flow-legend .pill{font-size:11px;padding:3px 9px}
+
+  .empty{
+    text-align:center;padding:50px 20px;color:var(--muted);
+    background:#fff;border-radius:14px;border:1px dashed var(--border);
+  }
+  footer{padding:18px 32px;color:var(--muted);font-size:12px;text-align:center;border-top:1px solid var(--border);background:#fff;margin-top:24px}
+
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr}
+    aside{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--border)}
+    main{padding:18px}
+    .lane{grid-template-columns:140px 1fr}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>MR Centro Clima — Mappa Processi e Persone</h1>
+  <p>Installazione e manutenzione HVAC · Mappatura completa delle attività con responsabilità individuali</p>
+</header>
+
+<div class="wrap">
+  <aside>
+    <h3>Vista</h3>
+    <div id="nav-views"></div>
+
+    <h3 style="margin-top:16px">Processi</h3>
+    <div id="nav"></div>
+
+    <div class="filter-block">
+      <h3>Filtra per persona</h3>
+      <div class="filter-actions">
+        <button onclick="setAllPersons(true)">Tutti</button>
+        <button onclick="setAllPersons(false)">Nessuno</button>
+      </div>
+      <div id="people-filters"></div>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div class="empty">Caricamento…</div>
+  </main>
+</div>
+
+<footer>Mappa interattiva · seleziona un processo o la "Vista per persona" · usa i filtri a sinistra per isolare un singolo collaboratore</footer>
+
+<script>
+// ---------- People ----------
+const PEOPLE = {
+  giulia:    { name:"Giulia Madoglio",   role:"Amministratore",          init:"GM", color:"#b45309", bg:"#fef3c7" },
+  alessandro:{ name:"Alessandro Naggi",  role:"Resp. Vendite/Commerciale",init:"AN", color:"#be123c", bg:"#ffe4e6" },
+  marco:     { name:"Marco Broggini",    role:"Progettista / PM commesse",init:"MB", color:"#1d4ed8", bg:"#dbeafe" },
+  luigi:     { name:"Luigi Marelli",     role:"Responsabile Tecnico",    init:"LM", color:"#0f766e", bg:"#ccfbf1" },
+  edemomi:   { name:"Emanuele De Momi",  role:"Supporto tecnico / Supervisioni", init:"EDM", color:"#0891b2", bg:"#cffafe" },
+  egorletta: { name:"Emanuele Gorletta", role:"Sicurezza, Ambiente, Pratiche", init:"EG", color:"#15803d", bg:"#dcfce7" },
+  cristina:  { name:"Cristina Pozzi",    role:"Front Office / Pianificazione", init:"CP", color:"#7c3aed", bg:"#ede9fe" },
+  ester:     { name:"Ester Marzetta",    role:"Contabilità / Fatturazione", init:"EM", color:"#059669", bg:"#d1fae5" },
+  milena:    { name:"Milena",            role:"Controllo fatture", init:"MI", color:"#db2777", bg:"#fce7f3" },
+  tecnici:   { name:"Tecnici in campo",  role:"Esecuzione interventi",   init:"TC", color:"#475569", bg:"#e2e8f0" },
+  cliente:   { name:"Cliente",           role:"Esterno",                 init:"CL", color:"#334155", bg:"#e2e8f0" },
+  fornitore: { name:"Fornitore",         role:"Esterno",                 init:"FO", color:"#92400e", bg:"#fef3c7" },
+  clivet:    { name:"Clivet (casa madre)", role:"Esterno",               init:"CV", color:"#0c4a6e", bg:"#e0f2fe" },
+  commercialista: { name:"Commercialista", role:"Esterno",               init:"CM", color:"#6d28d9", bg:"#ede9fe" }
+};
+
+// ---------- Processes ----------
+const PROCESSES = [
+  {
+    id:"p1",
+    title:"Direzione e governance",
+    desc:"Indirizzo strategico dell'azienda, governance economico-finanziaria, gestione rapporti con consulenti esterni e clienti chiave.",
+    trigger:"Continuativo · pianificazione annuale e revisioni periodiche",
+    output:"Decisioni di investimento · approvazioni · indirizzi strategici · clienti chiave presidiati",
+    sla:"Riunione mensile con Contabilità per andamento · revisione strategica trimestrale",
+    activities:[
+      { n:1, person:"giulia", what:"Pianificazione strategica", desc:"Definizione obiettivi annuali, budget, scelte di investimento (mezzi, strumenti, persone, tecnologie).", inputs:"Andamento storico, scenario di mercato", outputs:"Piano annuale e budget" },
+      { n:2, person:"giulia", what:"Approvazione ferie e gestione organizzativa", desc:"Approvazione richieste ferie/permessi, coordinamento copertura turni in periodi critici.", inputs:"Richieste collaboratori", outputs:"Calendario presenze approvato" },
+      { n:3, person:"giulia", what:"Scelta investimenti", desc:"Valutazione di investimenti significativi (attrezzature, software, mezzi, immobili).", inputs:"Proposte interne, preventivi", outputs:"Decisione di investimento" },
+      { n:4, person:"giulia", what:"Contatto banche", desc:"Gestione rapporti bancari, linee di credito, fidi, valutazione strumenti finanziari.", inputs:"Estratti conto, condizioni bancarie", outputs:"Accordi e operazioni bancarie" },
+      { n:5, person:"giulia", what:"Coordinamento con commercialista e studio paghe", desc:"Verifica adempimenti fiscali e del lavoro, decisioni straordinarie su buste paga, contributi, dichiarazioni.", inputs:"Comunicazioni dei consulenti", outputs:"Decisioni operative su paghe e fiscale" },
+      { n:6, person:"giulia", what:"Analisi andamento fatturazione e pagamenti", desc:"Monitoraggio mensile dei KPI economici (fatturato, marginalità, incassi, insoluti) in collaborazione con Ester.", inputs:"Report da Ester", outputs:"Dashboard direzionale, azioni correttive" },
+      { n:7, person:"giulia", what:"Contatto e consulenza con clienti chiave", desc:"Relazione diretta con i clienti più strategici (fidelizzazione, gestione escalation, proposte personalizzate).", inputs:"Segnalazioni Alessandro/Luigi/Cristina", outputs:"Cliente presidiato, eventuali offerte ad hoc" },
+      { n:8, person:"giulia", what:"Definizione deleghe in scadenza", desc:"Pianificazione delega di progettazione esecutiva, programmazione PLC e supervisioni, collaudi in campo verso le persone più indicate del team.", inputs:"Carico di lavoro, competenze interne", outputs:"Piano di delega e crescita" }
+    ],
+    docs:[
+      { name:"Piano strategico annuale", when:"Definito a inizio anno" },
+      { name:"Budget e forecast", when:"Aggiornato trimestralmente" },
+      { name:"Verbale incontri banca/commercialista", when:"Periodico" }
+    ]
+  },
+  {
+    id:"p2",
+    title:"Commerciale — sopralluoghi e preventivi",
+    desc:"Dal primo contatto cliente alla chiusura del preventivo: sopralluogo, quantificazione tecnica, redazione e invio offerta, follow-up commerciale.",
+    trigger:"Richiesta cliente di nuova installazione, ampliamento, sostituzione o riparazione",
+    output:"Preventivo accettato · commessa aperta",
+    sla:"Sopralluogo entro 5 giorni · preventivo entro 5 giorni dal sopralluogo",
+    activities:[
+      { n:1, person:"cliente", what:"Richiesta di offerta", desc:"Cliente contatta MR Centro Clima per quotazione (impianto nuovo, ampliamento, sostituzione, riparazione).", inputs:"Email, telefono, sito web", outputs:"Richiesta in ingresso" },
+      { n:2, person:"cristina", what:"Ricezione e instradamento richiesta", desc:"Risposta al cliente, raccolta informazioni di base, inserimento in agenda commerciale e passaggio ad Alessandro.", inputs:"Contatto cliente", outputs:"Lead commerciale aperto" },
+      { n:3, person:"alessandro", what:"Contatto cliente e qualifica", desc:"Approfondimento esigenze, definizione tipologia di intervento, fissaggio sopralluogo.", inputs:"Lead", outputs:"Sopralluogo schedulato" },
+      { n:4, person:"alessandro", what:"Sopralluogo per installazione impianti", desc:"Visita in loco, raccolta dati impianto esistente, dimensionamento di massima, valutazione vincoli.", inputs:"Sito cliente, eventuali documenti tecnici", outputs:"Note di sopralluogo, foto, misure" },
+      { n:5, person:"luigi", what:"Supporto tecnico al sopralluogo (su richiesta)", desc:"Per impianti complessi (regolazioni, supervisioni, installazioni particolari) Luigi affianca Alessandro nel sopralluogo.", inputs:"Richiesta da Alessandro", outputs:"Valutazione tecnica supportata" },
+      { n:6, person:"marco", what:"Supporto tecnico al sopralluogo (impianti termici)", desc:"Per impianti termici e progettazione complessa, Marco partecipa al sopralluogo per raccogliere i dati progettuali.", inputs:"Richiesta da Alessandro", outputs:"Dati progetto raccolti" },
+      { n:7, person:"giulia", what:"Presidio commerciale per clienti chiave", desc:"Per i clienti chiave Giulia partecipa al contatto, valida proposte, gestisce relazione.", inputs:"Segnalazione Alessandro", outputs:"Cliente chiave seguito" },
+      { n:8, person:"alessandro", what:"Redazione preventivo standard", desc:"Per impianti nuovi standard e riparazioni, Alessandro redige il preventivo (distinta materiali, ore, prezzo, IVA, condizioni).", inputs:"Note sopralluogo, listini, distinta tecnica", outputs:"Preventivo numerato" },
+      { n:9, person:"luigi", what:"Redazione preventivo per installazioni particolari", desc:"Per installazioni particolari, sistemi di regolazione/supervisione e interventi di riparazione complessi, Luigi redige il preventivo tecnico.", inputs:"Note sopralluogo, schede tecniche", outputs:"Preventivo tecnico" },
+      { n:10, person:"alessandro", what:"Invio preventivo e follow-up", desc:"Trasmissione al cliente via email/PEC, follow-up telefonico, gestione di eventuali revisioni.", inputs:"Preventivo", outputs:"Preventivo inviato e tracciato" },
+      { n:11, person:"cliente", what:"Accettazione preventivo", desc:"Conferma scritta che apre la commessa.", inputs:"Preventivo", outputs:"Preventivo firmato/confermato" }
+    ],
+    docs:[
+      { name:"Lead commerciale", when:"Aperto al primo contatto" },
+      { name:"Note di sopralluogo / fotografie", when:"Durante il sopralluogo" },
+      { name:"Preventivo numerato", when:"Inviato al cliente" },
+      { name:"Conferma d'ordine", when:"All'accettazione" }
+    ]
+  },
+  {
+    id:"p3",
+    title:"Progettazione e PM commessa",
+    desc:"Dalla commessa accettata al cantiere chiuso: progettazione, PM, acquisto materiali specialistici, disegni as-built, pratiche ENEA, programmazione PLC.",
+    trigger:"Preventivo accettato / commessa di installazione aperta",
+    output:"Impianto progettato e installato · documentazione tecnica completa",
+    sla:"Progetto entro tempi di commessa · disegni as-built consegnati a fine lavori",
+    activities:[
+      { n:1, person:"marco", what:"Redazione progetto impianto termico", desc:"Progettazione esecutiva impianto termico: schemi, dimensionamenti, scelte componenti, calcoli normativi.", inputs:"Dati sopralluogo, normative, distinta", outputs:"Progetto esecutivo" },
+      { n:2, person:"marco", what:"Project Management commessa di installazione", desc:"Coordinamento tempi/costi/risorse della commessa, interfaccia con cliente, tecnici, fornitori.", inputs:"Commessa", outputs:"Cantiere coordinato e tempistiche rispettate" },
+      { n:3, person:"marco", what:"Acquisto materiale di commessa", desc:"Selezione fornitori, emissione ordini di acquisto, verifica congruenza con il progetto.", inputs:"Distinta materiali, listini fornitori", outputs:"Ordini d'acquisto emessi" },
+      { n:4, person:"marco", what:"Supporto tecnico decisionale ai tecnici in cantiere", desc:"Risposte a quesiti tecnici, varianti, problemi di posa o messa in servizio, in tempo reale.", inputs:"Segnalazioni tecnici", outputs:"Decisione tecnica condivisa" },
+      { n:5, person:"luigi", what:"Supporto tecnico decisionale (regolazioni e PLC)", desc:"Per le commesse con regolazioni evolute o supervisioni, Luigi affianca Marco nella decisione tecnica.", inputs:"Segnalazioni cantiere", outputs:"Soluzione tecnica regolazioni/PLC" },
+      { n:6, person:"marco", what:"Redazione disegni as-built e di progetto", desc:"Aggiornamento dei disegni a installazione conclusa per consegna al cliente e archivio.", inputs:"Misure e modifiche di cantiere", outputs:"Disegni as-built consegnati" },
+      { n:7, person:"marco", what:"Pratiche ENEA", desc:"Predisposizione e invio delle pratiche ENEA per gli interventi che ne beneficiano (es. detrazioni, efficientamento).", inputs:"Dati impianto, fatture", outputs:"Pratica ENEA inviata" },
+      { n:8, person:"marco", what:"Programmazione PLC", desc:"Sviluppo logica PLC per le commesse complesse (regolazioni custom, integrazioni con BMS).", inputs:"Specifica tecnica, schemi", outputs:"PLC programmato" },
+      { n:9, person:"luigi", what:"Programmazione PLC e supervisioni (in delega/affiancamento)", desc:"Programmazione PLC e sistemi di supervisione, in particolare per regolazioni e collaudi finali.", inputs:"Specifica progetto", outputs:"PLC e supervisione operativi" }
+    ],
+    docs:[
+      { name:"Progetto esecutivo impianto", when:"Prima dell'apertura cantiere" },
+      { name:"Distinta materiali / ordini", when:"Durante la commessa" },
+      { name:"Disegni as-built", when:"A fine lavori" },
+      { name:"Pratica ENEA", when:"Entro 90 giorni dalla fine lavori" },
+      { name:"Logica PLC / programma supervisione", when:"Consegnata in archivio progetti" }
+    ]
+  },
+  {
+    id:"p4",
+    title:"Front office, richieste cliente e gestione TASK Clivet",
+    desc:"Primo punto di contatto con il cliente, gestione richieste di assistenza/manutenzione/garanzia e interfaccia con casa madre Clivet per i ticket di garanzia/supporto.",
+    trigger:"Contatto in arrivo dal cliente o necessità di apertura ticket Clivet",
+    output:"Richiesta presa in carico · TASK Clivet aperto/chiuso · cliente informato",
+    sla:"Risposta entro 1 giorno lavorativo · apertura TASK Clivet entro 24h",
+    activities:[
+      { n:1, person:"cliente", what:"Contatto cliente", desc:"Chiamata, email, WhatsApp, walk-in per assistenza, richieste amministrative, manutenzione.", inputs:"Canali di contatto", outputs:"Richiesta in ingresso" },
+      { n:2, person:"cristina", what:"Risposta al telefono / accoglienza", desc:"Cristina risponde al centralino, accoglie le richieste e raccoglie i dati di base.", inputs:"Canali in ingresso", outputs:"Contatto registrato" },
+      { n:3, person:"cristina", what:"Inserimento chiamate e richieste a gestionale", desc:"Apertura ticket sul gestionale con anagrafica, motivo, urgenza, impianto interessato.", inputs:"Informazioni cliente", outputs:"Ticket numerato" },
+      { n:4, person:"cristina", what:"Instradamento alla funzione competente", desc:"Distribuzione ai colleghi: tecnico (Luigi/Emanuele De Momi/Marco), commerciale (Alessandro), amministrativo (Ester), pratiche (Emanuele Gorletta).", inputs:"Categoria richiesta", outputs:"Ticket assegnato" },
+      { n:5, person:"cristina", what:"Apertura TASK assistenza con Clivet", desc:"Per impianti Clivet in garanzia/assistenza, Cristina apre il TASK sul portale della casa madre con descrizione guasto, dati impianto e foto.", inputs:"Ticket cliente, scheda impianto", outputs:"TASK Clivet numerato" },
+      { n:6, person:"clivet", what:"Risposta tecnica/garanzia", desc:"Casa madre fornisce risposta tecnica, accettazione garanzia, eventuale invio pezzi di ricambio.", inputs:"TASK", outputs:"Risposta tecnica + eventuali ricambi" },
+      { n:7, person:"cristina", what:"Gestione e chiusura TASK Clivet", desc:"Aggiornamento del TASK con sviluppi (intervento eseguito, ricambio installato), chiusura e archiviazione del numero per la rendicontazione.", inputs:"Esito intervento", outputs:"TASK chiuso, rendicontazione garanzia" },
+      { n:8, person:"cristina", what:"Comunicazione con cliente", desc:"Aggiornamento al cliente su tempi, risposta Clivet, spedizione ricambi, schedulazione intervento.", inputs:"Sviluppi TASK", outputs:"Cliente informato" }
+    ],
+    docs:[
+      { name:"Ticket gestionale", when:"Aperto al primo contatto" },
+      { name:"TASK Clivet", when:"Per impianti Clivet in garanzia/supporto" },
+      { name:"Bolla ricambi Clivet", when:"All'arrivo dei pezzi" }
+    ]
+  },
+  {
+    id:"p5",
+    title:"Pianificazione interventi e gestione materiale",
+    desc:"Programmazione operativa degli interventi, gestione magazzino e materiale di commessa, predisposizione fogli di lavoro per i tecnici.",
+    trigger:"Ticket tecnico instradato a Cristina o materiale ricevuto da fornitore",
+    output:"Intervento schedulato · materiale disponibile · foglio di lavoro pronto",
+    sla:"Pianificazione entro 48h · materiale pronto giorno -1 dell'intervento",
+    activities:[
+      { n:1, person:"cristina", what:"Pianificazione interventi", desc:"Assegnazione interventi ai tecnici considerando agenda, competenze (FGAS, elettrico, termoidraulico), zona, urgenza. Conferma appuntamento al cliente.", inputs:"Ticket aperti, calendario tecnici", outputs:"Calendario interventi confermato" },
+      { n:2, person:"fornitore", what:"Consegna materiale con DDT", desc:"Fornitore consegna in sede o cantiere con DDT.", inputs:"Ordine d'acquisto", outputs:"Merce + DDT in arrivo" },
+      { n:3, person:"cristina", what:"Ricezione materiale", desc:"Controllo quali-quantitativo della merce in arrivo, firma DDT, eventuali riserve.", inputs:"DDT, ordine", outputs:"Materiale accettato" },
+      { n:4, person:"cristina", what:"Inserimento DDT su gestionale", desc:"Carico del DDT sul software gestionale con causali corrette, abbinamento all'ordine e alla commessa.", inputs:"DDT firmato", outputs:"DDT registrato a sistema" },
+      { n:5, person:"cristina", what:"Preparazione materiale per commessa", desc:"Picking, etichettatura per commessa, preparazione del materiale per il furgone tecnico o cantiere.", inputs:"Distinta commessa, giacenze", outputs:"Materiale pronto per il cantiere" },
+      { n:6, person:"marco", what:"Coordinamento materiale per commesse complesse", desc:"Per le commesse di installazione complesse, Marco supervisiona la corrispondenza materiale-progetto e coordina le forniture.", inputs:"Commessa, progetto", outputs:"Materiale coordinato" },
+      { n:7, person:"cristina", what:"Stampa e invio fogli di lavoro al tecnico", desc:"Predisposizione del foglio di lavoro con dati cliente, lavori da eseguire, materiale assegnato. Invio al tecnico (cartaceo o digitale).", inputs:"Calendario, ordine di servizio", outputs:"Foglio di lavoro consegnato" }
+    ],
+    docs:[
+      { name:"Calendario interventi", when:"Aggiornato in tempo reale" },
+      { name:"DDT in entrata", when:"Alla consegna materiale" },
+      { name:"Foglio di lavoro tecnico", when:"Prima dell'intervento" }
+    ]
+  },
+  {
+    id:"p6",
+    title:"Esecuzione tecnica, supervisioni e customer care",
+    desc:"Esecuzione interventi e installazioni, gestione delle supervisioni remote, supporto tecnico ai tecnici in campo, collaudi e gestione lamentele.",
+    trigger:"Foglio di lavoro consegnato al tecnico / impianto in supervisione",
+    output:"Intervento eseguito e documentato · impianto supervisionato · lamentela risolta",
+    sla:"Foglio di lavoro letto e fatturabile entro 5 giorni · risposta a lamentele entro 2 giorni",
+    activities:[
+      { n:1, person:"tecnici", what:"Esecuzione intervento e compilazione foglio di lavoro", desc:"Tecnico in campo esegue l'intervento, fa firmare il foglio di lavoro al cliente con materiali e ore.", inputs:"Foglio di lavoro, materiale", outputs:"Foglio di lavoro firmato" },
+      { n:2, person:"edemomi", what:"Lettura fogli di lavoro", desc:"Verifica completezza, materiali, ore, eventuali lavori extra; segnalazione anomalie.", inputs:"Fogli rientrati", outputs:"Foglio validato e pronto per fatturazione" },
+      { n:3, person:"edemomi", what:"Supporto tecnico ai tecnici in campo", desc:"Affiancamento da remoto/telefonico ai tecnici per problemi di posa, regolazioni, guasti, ecc.", inputs:"Chiamate da tecnici", outputs:"Risoluzione problema, intervento concluso" },
+      { n:4, person:"edemomi", what:"Gestione supervisioni remote", desc:"Monitoraggio degli impianti supervisionati, allarmi, interventi correttivi a distanza.", inputs:"Sistemi di supervisione, allarmi", outputs:"Impianto in regime, eventuale intervento attivato" },
+      { n:5, person:"edemomi", what:"Supervisione cantieri", desc:"Visite di supervisione sui cantieri attivi per verificare avanzamento e qualità.", inputs:"Cantieri attivi", outputs:"Verbale di supervisione" },
+      { n:6, person:"edemomi", what:"Redazione schemi elettrici", desc:"Disegno schemi elettrici a supporto delle commesse e degli interventi di regolazione.", inputs:"Specifica progetto", outputs:"Schema elettrico" },
+      { n:7, person:"luigi", what:"Programmazione supervisioni", desc:"Configurazione dei sistemi di supervisione (mappature, allarmi, dashboard, accessi remoti).", inputs:"Specifica impianto", outputs:"Supervisione configurata" },
+      { n:8, person:"luigi", what:"Collaudi regolazioni e supervisioni in campo", desc:"Collaudo finale delle regolazioni e dei sistemi di supervisione presso l'impianto.", inputs:"Impianto installato e programmato", outputs:"Verbale di collaudo" },
+      { n:9, person:"luigi", what:"Risposta a lamentele clienti", desc:"Gestione tecnica delle non conformità segnalate dai clienti, definizione azione correttiva.", inputs:"Reclamo cliente", outputs:"Soluzione tecnica e comunicazione" },
+      { n:10, person:"luigi", what:"Responsabilità progetti interni (es. Chatbot tecnico AI)", desc:"Gestione di iniziative interne di innovazione tecnica.", inputs:"Obiettivi direzione", outputs:"Progetti interni avanzati" },
+      { n:11, person:"giulia", what:"Consulenza diretta su clienti chiave", desc:"In caso di lamentele/casi delicati su clienti chiave, Giulia interviene direttamente.", inputs:"Escalation", outputs:"Relazione cliente preservata" },
+      { n:12, person:"cristina", what:"Stampa fogli di lavoro per la fatturazione", desc:"Preparazione del fascicolo per Ester con foglio di lavoro letto e validato, pronto per la fattura.", inputs:"Fogli validati da Emanuele De Momi", outputs:"Documenti pronti per fatturazione" },
+      { n:13, person:"cristina", what:"Redazione e invio consuntivi", desc:"Per le commesse a consuntivo, redige il riepilogo lavori/materiali/ore e lo invia al cliente prima della fatturazione.", inputs:"Fogli, distinte, ore", outputs:"Consuntivo inviato" }
+    ],
+    docs:[
+      { name:"Foglio di lavoro firmato", when:"Al termine dell'intervento" },
+      { name:"Verbale di collaudo", when:"A collaudo finale" },
+      { name:"Schema elettrico", when:"Allegato al progetto" },
+      { name:"Consuntivo lavori", when:"Pre-fatturazione" }
+    ]
+  },
+  {
+    id:"p7",
+    title:"Pratiche, sicurezza, ambiente e compliance",
+    desc:"Gestione di tutti gli adempimenti regolamentari: sicurezza accesso cantieri, ambiente (rifiuti/FIR), pratiche ZTL, MEPA, FGAS e CURIT, ENEA.",
+    trigger:"Cantiere aperto · rifiuti prodotti · gara MEPA · intervento su gas refrigeranti · impianto termico installato",
+    output:"Pratiche conformi e archiviate · interventi tracciati nei portali pubblici",
+    sla:"Pratiche di sicurezza prima dell'apertura cantiere · FGAS/CURIT entro 30 giorni · ENEA entro 90 giorni",
+    activities:[
+      { n:1, person:"egorletta", what:"Pratiche di sicurezza per accesso ai cantieri", desc:"Predisposizione DUVRI, POS, documentazione di idoneità tecnico professionale, formazione, DPI per i cantieri (specie quelli di committenze importanti).", inputs:"Richieste committenza, dati tecnici", outputs:"Pratica sicurezza approvata" },
+      { n:2, person:"egorletta", what:"Gestione ambiente — smaltimenti rifiuti e FIR", desc:"Classificazione rifiuti, contratti con smaltitori autorizzati, emissione e gestione FIR (Formulario Identificazione Rifiuti), tenuta registro carico/scarico.", inputs:"Rifiuti prodotti, codici CER", outputs:"FIR emessi, registro aggiornato" },
+      { n:3, person:"egorletta", what:"Gestione pratiche ZTL", desc:"Richiesta permessi ZTL per accesso dei mezzi alle zone limitate, rinnovi.", inputs:"Mezzi, comuni di lavoro", outputs:"Permessi ZTL attivi" },
+      { n:4, person:"egorletta", what:"Pratiche MEPA per pubblica amministrazione", desc:"Iscrizione/aggiornamento MEPA, partecipazione a gare e RDO, predisposizione documentazione amministrativa per gare.", inputs:"Bandi e RDO PA", outputs:"Offerta MEPA presentata" },
+      { n:5, person:"egorletta", what:"Inserimento interventi FGAS", desc:"Registrazione nel portale FGAS degli interventi su impianti contenenti gas refrigeranti, controllo periodico delle scadenze.", inputs:"Rapportini interventi", outputs:"Interventi FGAS registrati" },
+      { n:6, person:"egorletta", what:"Inserimento interventi CURIT", desc:"Registrazione nel CURIT (Catasto Unico Regionale Impianti Termici – Lombardia) di interventi e verifiche su impianti termici.", inputs:"Rapportini, libretti impianto", outputs:"Interventi CURIT registrati" },
+      { n:7, person:"marco", what:"Pratiche ENEA", desc:"Trasmissione delle pratiche ENEA per gli interventi che danno diritto a detrazioni/incentivi (cfr. Processo P3).", inputs:"Dati intervento, fatture", outputs:"Pratica ENEA inviata" }
+    ],
+    docs:[
+      { name:"DUVRI / POS / idoneità tecnico-professionale", when:"Pre-cantiere" },
+      { name:"FIR rifiuti / registro C/S", when:"Per ogni movimentazione" },
+      { name:"Permessi ZTL", when:"Annuali o per intervento" },
+      { name:"Documentazione MEPA / RDO", when:"Per ogni gara" },
+      { name:"Registrazioni FGAS / CURIT", when:"Entro 30 giorni dall'intervento" }
+    ]
+  },
+  {
+    id:"p8",
+    title:"Contratti di manutenzione programmata",
+    desc:"Dal lead al contratto firmato, dall'esecuzione delle visite alla fatturazione del canone, fino al rinnovo. Mappatura di dettaglio con sistemi usati, tempistiche reali e punti critici evidenziati.",
+    trigger:"Lead di manutenzione (nuova installazione, cliente fuori contratto, cliente nuovo, contratto in scadenza)",
+    output:"Contratto attivo · visite eseguite e tracciate · canoni fatturati · contratto rinnovato",
+    sla:"Offerta entro 5 gg · contratto inserito stesso giorno della firma · visita pianificata 30 gg prima · rinnovo proposto 60 gg prima",
+    issues:[
+      { title:"Pianificazione cieca: mancano info essenziali sulle visite", desc:"Anche quando le 'chiamate' vengono generate, alla pianificazione mancano informazioni fondamentali: scadenza tassativa entro la quale la visita va fatta, location del cliente, numero di persone necessarie, ore stimate per l'intervento, e soprattutto data dell'ultimo intervento — per non programmare un intervento subito dopo un altro sullo stesso impianto. Workaround attuale: Giulia ricostruisce tutto questo in Excel.", fix:"Arricchire la chiamata sul gestionale al momento della creazione con: scadenza calcolata dal contratto, location, persone necessarie, ore stimate, link agli interventi precedenti su quell'impianto. Eliminare il workaround Excel di Giulia." },
+      { title:"Generazione 'chiamate' da contratto fragile", desc:"Egorletta deve aprire manualmente una chiamata per ciascuna visita prevista. Capita che il passaggio salti e il contratto resti senza chiamate generate, diventando 'invisibile' a Cristina.", fix:"Generazione automatica delle chiamate alla creazione del contratto, una per visita prevista, popolata con i dati del punto precedente." },
+      { title:"Manca controllo periodico degli interventi saltati", desc:"Oggi NON esiste una routine che verifichi sistematicamente quali interventi previsti dal contratto non sono stati eseguiti. Conseguenze a catena: visite contrattuali saltate, registrazioni FGAS/CURIT mancanti, canone non fatturato (perché si fattura per visita), contestazioni cliente al rinnovo, perdita di fatturato.", fix:"Dashboard settimanale 'Interventi previsti vs eseguiti per contratto' con alert automatico per interventi in ritardo > N giorni dalla scadenza. Owner: Egorletta con escalation a Giulia per gli interventi non più recuperabili nel periodo." },
+      { title:"CURIT e Libretto Impianto senza processo univoco", desc:"Per CURIT non esiste un trigger sistematico (si fa solo se il cliente lo chiede). Anche il Libretto di Impianto è gestito in modo non uniforme: persone diverse applicano modalità diverse. Rischio: impianti non aggiornati, sanzioni, contestazioni, contenzioso al rinnovo.", fix:"Definire UN processo univoco per ogni tipologia di impianto: trigger automatico nel gestionale (es. impianto termico in regione → CURIT obbligatorio + libretto sempre aggiornato; impianto a refrigerante → modulo FGAS obbligatorio). Checklist post-visita non chiudibile finché non sono completati." },
+      { title:"Tecnico in campo senza informazioni operative complete", desc:"Sull'app il tecnico non sempre trova in modo chiaro QUALI operazioni deve eseguire e SU QUALI macchine, soprattutto su impianti complessi (più unità) o contratti pluriennali con interventi differenziati visita per visita. Conseguenza: visite incomplete, secondi giri, rilavorazioni, contestazioni cliente.", fix:"Definire nel contratto una 'scheda operativa per visita': lista macchine, lista operazioni per macchina, tempo previsto, persone previste, materiali tipici. Alimentare la chiamata sul gestionale con questa scheda così il tecnico la trova in app." },
+      { title:"Passaggio cartaceo De Momi → Cristina → Ester", desc:"Pur essendo tutti sullo stesso gestionale, il foglio di lavoro chiuso da Emanuele De Momi viene stampato da Cristina e consegnato fisicamente a Ester per la fatturazione. Punto di rallentamento e di possibile perdita documenti.", fix:"Workflow digitale: stato 'pronto fatturazione' visibile direttamente a Ester nel gestionale, senza stampa. Cristina mantiene solo l'invio al cliente." }
+    ],
+    activities:[
+      { n:1, person:"egorletta", what:"Identificazione lead di manutenzione", desc:"4 fonti: (a) chiusura nuova installazione; (b) cliente esistente con impianto fuori contratto; (c) lead esterno; (d) contratto in scadenza. La fonte (d) è alimentata dal gestionale che segnala in automatico i contratti a 60 gg dalla scadenza.", inputs:"Liste gestionale, segnalazioni Alessandro/Cristina, scadenze automatiche", outputs:"Lista lead da lavorare", sistema:"Gestionale", tempo:"Continuo · trigger automatico 60gg prima per i rinnovi" },
+      { n:2, person:"egorletta", what:"Raccolta dati impianto per offerta", desc:"Per impianti già censiti: dati direttamente dal gestionale. Per nuovi clienti: sopralluogo dedicato (con eventuale supporto tecnico) o richiesta documenti (libretto, schede tecniche, foto) al cliente.", inputs:"Anagrafica gestionale, sopralluogo, documenti cliente", outputs:"Scheda impianto pronta per offerta", sistema:"Gestionale + email/sopralluogo", tempo:"1-3 giorni a seconda della fonte" },
+      { n:3, person:"egorletta", what:"Predisposizione e invio offerta", desc:"Generazione offerta sul gestionale con: scheda impianto, periodicità visite, canone, modalità di pagamento (canone posticipato per visita), durata, clausole specifiche per tipologia (residenziale / terziario / industriale / PA via MEPA).", inputs:"Scheda impianto, listini manutenzione, eventuali clausole MEPA", outputs:"Offerta numerata trasmessa al cliente", sistema:"Gestionale + email/PEC", tempo:"Entro 5 gg dal lead" },
+      { n:4, person:"cliente", what:"Accettazione e firma contratto", desc:"Cliente firma il contratto (cartaceo o digitale). Il PDF firmato torna a Egorletta.", inputs:"Offerta", outputs:"Contratto firmato (PDF)", sistema:"Email/PEC", tempo:"Variabile (5-30 gg)" },
+      { n:5, person:"egorletta", what:"Inserimento contratto a sistema", desc:"Caricamento completo nel gestionale: anagrafica impianto (marca/modello/matricola/ubicazione/gas), periodicità e finestre temporali, condizioni economiche, allegato PDF firmato.", inputs:"Contratto firmato", outputs:"Contratto attivo nel gestionale", sistema:"Gestionale", tempo:"Stesso giorno della firma" },
+      { n:6, person:"egorletta", what:"Generazione chiamate da contratto (PUNTO CRITICO)", desc:"Apertura manuale di una 'chiamata' (intervento programmato) sul gestionale per ciascuna visita prevista (es. 2/anno per residenziale, 4/anno per VRF). Doppio problema: (1) il passaggio è fragile e capita che alcune chiamate non vengano create — il contratto resta 'invisibile' a Cristina; (2) anche quando le chiamate ci sono, non vengono popolate con scadenza, location, persone necessarie, ore stimate, data ultimo intervento.", inputs:"Contratto attivo", outputs:"N chiamate aperte (spesso senza dati di pianificazione)", sistema:"Gestionale (manuale)", tempo:"Stesso giorno o giorni successivi", critico:{ livello:"alto", motivo:"Manuale e fragile + chiamata 'povera' di info per pianificare", suggerimento:"Generazione automatica all'inserimento contratto, popolata con tutti i dati di pianificazione" } },
+      { n:7, person:"giulia", what:"WORKAROUND — estrazione Excel impianti per giro manutenzione", desc:"Estrazione periodica dal gestionale della lista impianti, rielaborazione in Excel per zona e tipologia, definizione dei giri di manutenzione. Compensazione del passaggio precedente.", inputs:"Estrazione gestionale", outputs:"Excel di pianificazione consegnato a Cristina", sistema:"Gestionale → Excel (manuale)", tempo:"Periodico (settimanale/mensile)", critico:{ livello:"alto", motivo:"Lavoro manuale di Giulia per coprire un buco di processo", suggerimento:"Eliminare con la fix del punto #6" } },
+      { n:8, person:"cristina", what:"Pianificazione visite periodiche (PUNTO CRITICO)", desc:"Cristina vede le chiamate aperte (da Egorletta o dall'Excel di Giulia) e cerca di programmare. Le chiamate sono spesso 'povere' di informazioni: mancano scadenza tassativa, location del cliente, persone necessarie, ore stimate, data dell'ultimo intervento (cruciale per non sovrapporre). Cristina deve quindi cercare a mano queste info su altri sistemi/cartelle.", inputs:"Chiamate aperte, calendario tecnici, Excel di Giulia, ricerca manuale storico", outputs:"Visita schedulata e confermata (con margine di errore)", sistema:"Gestionale + telefono/email + ricerca manuale", tempo:"30 gg prima della finestra (quando l'info è disponibile)", critico:{ livello:"alto", motivo:"Pianificazione cieca: scadenza/location/persone/ore/storico ricostruiti a mano", suggerimento:"Chiamata già popolata di tutti i dati alla creazione (cfr. fix #6) + storico interventi linkato sull'impianto" } },
+      { n:9, person:"cristina", what:"Invio incarico al tecnico", desc:"L'incarico arriva al tecnico via app mobile collegata al gestionale: dati cliente, impianto, tipologia visita, eventuali avvisi.", inputs:"Visita schedulata", outputs:"Incarico in app del tecnico", sistema:"App mobile (gestionale)", tempo:"Stesso giorno della pianificazione" },
+      { n:10, person:"tecnici", what:"Esecuzione visita e compilazione rapportino (PUNTO CRITICO)", desc:"Il tecnico esegue la manutenzione e compila il rapportino sull'app. Problema: sull'app non sempre vede in modo chiaro QUALI operazioni deve eseguire e SU QUALI macchine — particolarmente critico su impianti complessi con più unità o contratti pluriennali con interventi differenziati visita per visita. Conseguenze: visite incomplete, secondi giri, rilavorazioni, contestazioni cliente.", inputs:"Incarico (spesso senza scheda operativa dettagliata), impianto, materiale", outputs:"Rapportino chiuso + modulo FGAS (se applicabile) — talora incompleto", sistema:"App mobile", tempo:"Giorno dell'intervento", critico:{ livello:"alto", motivo:"Tecnico senza scheda operativa per visita su quali macchine fare cosa", suggerimento:"Scheda operativa per visita allegata alla chiamata: macchine, operazioni per macchina, tempi, persone, materiali. Visibile in app." } },
+      { n:11, person:"edemomi", what:"Lettura foglio di lavoro e flag 'da inviare al cliente'", desc:"Emanuele De Momi apre il foglio di lavoro nel gestionale, verifica completezza (materiale, ore, lavori extra), risolve dubbi tecnici e cambia lo stato in 'da inviare al cliente'.", inputs:"Rapportino chiuso", outputs:"Foglio validato in stato 'da inviare al cliente'", sistema:"Gestionale", tempo:"Entro 1-3 gg dalla chiusura" },
+      { n:12, person:"cristina", what:"Invio foglio al cliente + stampa per Ester", desc:"Cristina invia il foglio al cliente (email/PEC), lo stampa e lo consegna fisicamente a Ester per la fatturazione del canone.", inputs:"Foglio validato", outputs:"Foglio inviato cliente + copia cartacea a Ester", sistema:"Gestionale + email + cartaceo", tempo:"Entro 1-2 gg dalla validazione", critico:{ livello:"medio", motivo:"Passaggio cartaceo ridondante (siamo tutti sullo stesso gestionale)", suggerimento:"Stato 'pronto fatturazione' visibile direttamente a Ester nel gestionale, senza stampa" } },
+      { n:13, person:"ester", what:"Fatturazione canone (posticipata per visita)", desc:"Ester fattura sul gestionale la quota di canone associata alla visita (canone annuale / numero visite previste). Trasmissione SDI standard (cfr. P10).", inputs:"Foglio cartaceo + visita chiusa nel gestionale", outputs:"Fattura canone XML SDI emessa", sistema:"Gestionale", tempo:"Entro 7-12 gg dalla visita" },
+      { n:14, person:"egorletta", what:"Registrazione FGAS periodica", desc:"Egorletta cerca periodicamente i moduli FGAS compilati dai tecnici sull'app/gestionale e li trasmette al portale FGAS.", inputs:"Moduli FGAS compilati dai tecnici", outputs:"Interventi registrati su portale FGAS", sistema:"Gestionale → Portale FGAS", tempo:"Periodica (rischio ritardo)", critico:{ livello:"medio", motivo:"Periodicità non strutturata = rischio di andare fuori dai 30 gg di legge", suggerimento:"Routine settimanale fissa e dashboard FGAS pendenti sul gestionale" } },
+      { n:15, person:"egorletta", what:"Registrazione CURIT e Libretto Impianto (PUNTO CRITICO)", desc:"CURIT: oggi non strutturata, viene fatta solo se il cliente lo chiede. Libretto Impianto: gestito in modo non uniforme — persone diverse applicano modalità diverse, mancano regole univoche. Su impianti termici regionali che richiedono CURIT e libretto questo è un doppio rischio: sanzioni e contestazioni cliente.", inputs:"Richiesta cliente (oggi) o richiamo a posteriori", outputs:"Registrazione CURIT a singhiozzo · Libretto talvolta aggiornato, talvolta no", sistema:"Portale CURIT + cartaceo/gestionale (a discrezione)", tempo:"Reattivo, non strutturato", critico:{ livello:"alto", motivo:"Nessun processo univoco · CURIT solo a richiesta · Libretto gestito in modo eterogeneo", suggerimento:"Trigger automatico per tipologia impianto: termico → CURIT obbligatorio + libretto sempre aggiornato post-visita. Checklist post-intervento non chiudibile finché entrambi non sono stati compilati." } },
+      { n:16, person:"egorletta", what:"Controllo periodico degli interventi saltati", desc:"Routine settimanale che dovrebbe verificare quali interventi previsti dal contratto NON sono stati eseguiti nel periodo, e attivare il recupero (riprogrammazione, FGAS/CURIT recuperati, eventuale storno canone se irrecuperabili). Oggi questa routine non esiste: gli interventi saltati emergono solo a posteriori, spesso a contatto con il cliente al rinnovo.", inputs:"Estrazione previsti vs eseguiti per contratto", outputs:"Lista interventi da recuperare e/o stornare", sistema:"Dashboard gestionale (da costruire)", tempo:"Settimanale (target)", missing:true, critico:{ livello:"alto", motivo:"Routine mancante: interventi saltati non rilevati prima del rinnovo", suggerimento:"Costruire dashboard 'previsti vs eseguiti per contratto' con alert per interventi in ritardo > N gg. Owner: Egorletta · escalation Giulia per casi non recuperabili." } },
+      { n:17, person:"egorletta", what:"Notifica scadenza e proposta rinnovo", desc:"60 gg prima della scadenza, il gestionale segnala automaticamente. Egorletta predispone proposta di rinnovo (con eventuale revisione condizioni) e la invia al cliente. Il flusso ricomincia dal punto #3.", inputs:"Notifica gestionale, anagrafica contratto", outputs:"Proposta di rinnovo inviata", sistema:"Gestionale + email/PEC", tempo:"60 gg prima della scadenza" }
+    ],
+    docs:[
+      { name:"Offerta di manutenzione", when:"Inviata al cliente" },
+      { name:"Contratto di manutenzione (PDF firmato)", when:"Allegato al contratto nel gestionale" },
+      { name:"Libretto / scheda impianto", when:"Aggiornato ad ogni visita" },
+      { name:"Modulo FGAS (in app)", when:"Compilato dal tecnico per impianti a refrigerante" },
+      { name:"Rapportino visita (digitale)", when:"Compilato e firmato in app dal tecnico" },
+      { name:"Fattura canone (SDI)", when:"Per ogni visita chiusa" },
+      { name:"Notifica scadenza dal gestionale", when:"60 gg prima della scadenza" }
+    ]
+  },
+  {
+    id:"p9",
+    title:"Ciclo passivo — Acquisti e fatture fornitori",
+    desc:"Gestione fabbisogno materiali per le commesse, ordini fornitore, ricezione DDT, registrazione fatture passive elettroniche, schedulazione pagamenti.",
+    trigger:"Fabbisogno materiale di commessa o sotto-scorta",
+    output:"Materiale ricevuto · fattura registrata · pagamento schedulato",
+    sla:"Ordine entro 24h · registrazione fattura entro 5 giorni dalla ricezione",
+    activities:[
+      { n:1, person:"marco", what:"Definizione fabbisogno e ordine fornitore", desc:"Per le commesse, Marco definisce la distinta dei materiali, sceglie i fornitori e emette gli ordini d'acquisto.", inputs:"Distinta progetto, listini", outputs:"Ordine d'acquisto" },
+      { n:2, person:"fornitore", what:"Conferma e spedizione", desc:"Fornitore conferma e spedisce con DDT.", inputs:"Ordine", outputs:"Merce + DDT in arrivo" },
+      { n:3, person:"cristina", what:"Ricezione merce e DDT", desc:"Cristina riceve la merce, controlla, firma il DDT, eventuali riserve.", inputs:"DDT, ordine", outputs:"Merce accettata" },
+      { n:4, person:"cristina", what:"Inserimento DDT su gestionale", desc:"Carico del DDT sul gestionale con abbinamento all'ordine e alla commessa.", inputs:"DDT firmato", outputs:"DDT registrato" },
+      { n:5, person:"fornitore", what:"Invio fattura elettronica via SDI", desc:"Fornitore trasmette la fattura passiva tramite SDI.", inputs:"DDT, ordine", outputs:"Fattura passiva ricevuta" },
+      { n:6, person:"ester", what:"Acquisizione fatture acquisto", desc:"Acquisizione delle fatture passive da SDI/cassetto fiscale, controllo coerenza con ordine e DDT (3-way match).", inputs:"Cassetto fiscale, DDT, ordine", outputs:"Fattura validata" },
+      { n:7, person:"ester", what:"Registrazione e schedulazione pagamento", desc:"Registrazione contabile, imputazione a centro di costo/commessa, inserimento in scadenziario passivo.", inputs:"Fattura, condizioni di pagamento", outputs:"Scrittura contabile, scadenza creata" },
+      { n:8, person:"ester", what:"Pagamenti (RIBA / bonifico)", desc:"Predisposizione e invio dei pagamenti secondo scadenziario.", inputs:"Scadenziario", outputs:"Bonifici/RIBA emessi" }
+    ],
+    docs:[
+      { name:"Ordine d'acquisto", when:"Emesso da Marco verso fornitore" },
+      { name:"DDT in entrata", when:"Allegato alla merce" },
+      { name:"Fattura elettronica passiva (SDI)", when:"Tramite SDI" },
+      { name:"Mandato di pagamento", when:"Secondo scadenziario" }
+    ]
+  },
+  {
+    id:"p10",
+    title:"Ciclo attivo — Fatturazione e SDI",
+    desc:"Dal foglio di lavoro chiuso/consuntivo alla fattura elettronica attiva trasmessa via SDI, con gestione delle ricevute.",
+    trigger:"Foglio di lavoro letto e validato / consuntivo accettato",
+    output:"Fattura elettronica accettata da SDI · scadenza attiva creata",
+    sla:"Fatturazione entro 12 giorni dalla chiusura intervento · re-invio entro 5 giorni in caso di scarto",
+    activities:[
+      { n:1, person:"cristina", what:"Stampa fogli di lavoro per fatturazione e invio", desc:"Cristina prepara il fascicolo per la fatturazione (foglio di lavoro letto, consuntivo, eventuali allegati) e lo passa a Ester.", inputs:"Fogli validati, consuntivo", outputs:"Fascicolo pronto per fattura" },
+      { n:2, person:"cristina", what:"Redazione e invio consuntivi", desc:"Per le commesse a consuntivo, redazione del riepilogo per il cliente, invio e attesa accettazione prima della fattura.", inputs:"Ore, materiali, distinta", outputs:"Consuntivo inviato/accettato" },
+      { n:3, person:"ester", what:"Redazione fatture", desc:"Generazione fattura in formato XML FatturaPA con codice SDI/PEC cliente, IVA, riferimento commessa, eventuale split payment/reverse charge.", inputs:"Fascicolo Cristina, anagrafica", outputs:"Fattura XML pronta" },
+      { n:4, person:"ester", what:"Comunicazione con commercialista su campi contabili", desc:"Verifica con il commercialista su casistiche particolari (regimi IVA speciali, ritenute, imputazioni).", inputs:"Casi dubbi", outputs:"Configurazione fattura confermata" },
+      { n:5, person:"ester", what:"Invio fatture via SDI", desc:"Trasmissione al Sistema di Interscambio tramite gestionale/intermediario.", inputs:"Fattura XML", outputs:"Ricevuta di consegna" },
+      { n:6, person:"ester", what:"Gestione ricevute SDI ed esiti", desc:"Monitoraggio ricevute (consegna/mancata consegna/scarto), correzione e re-invio in caso di scarto, comunicazione al cliente.", inputs:"Ricevute SDI", outputs:"Fattura accettata, scadenza creata" }
+    ],
+    docs:[
+      { name:"Fascicolo fattura (fogli + consuntivo)", when:"Pre-fatturazione" },
+      { name:"Fattura elettronica attiva (XML SDI)", when:"Trasmessa via SDI" },
+      { name:"Ricevute SDI", when:"Allegate alla fattura" }
+    ]
+  },
+  {
+    id:"p11",
+    title:"Incassi, scadenziario e solleciti",
+    desc:"Gestione del ciclo di incasso: scadenziario, RIBA, registrazione incassi, solleciti graduati, monitoraggio direzionale.",
+    trigger:"Fattura attiva accettata da SDI",
+    output:"Incassi registrati · partite chiuse · insoluti gestiti · KPI di cassa monitorati",
+    sla:"Riconciliazione bancaria settimanale · solleciti progressivi a +7 / +15 / +30 giorni",
+    activities:[
+      { n:1, person:"ester", what:"Gestione scadenziario clienti", desc:"Monitoraggio settimanale delle fatture in scadenza/scadute, segnalazione anomalie a Giulia.", inputs:"Scadenziario attivo", outputs:"Lista scadenze monitorate" },
+      { n:2, person:"ester", what:"RIBA e gestione strumenti di incasso", desc:"Predisposizione presentazioni RIBA in banca, gestione SDD se previsti.", inputs:"Scadenze", outputs:"RIBA presentate" },
+      { n:3, person:"cliente", what:"Pagamento", desc:"Cliente paga via bonifico, RIBA, POS, contanti (entro limiti di legge).", inputs:"Fattura", outputs:"Movimento bancario o cassa" },
+      { n:4, person:"ester", what:"Registrazione incassi", desc:"Imputazione del pagamento alla partita aperta, riconciliazione bancaria.", inputs:"Estratto conto, ricevute POS", outputs:"Partita chiusa" },
+      { n:5, person:"ester", what:"Solleciti pagamenti", desc:"Solleciti graduati: bonario via email/telefono +7 gg, formale PEC +15 gg, escalation +30 gg con eventuale blocco interventi.", inputs:"Lista insoluti", outputs:"Solleciti tracciati" },
+      { n:6, person:"giulia", what:"Analisi andamento fatturazione e pagamenti", desc:"Revisione mensile insieme a Ester di fatturato, marginalità, DSO, insoluti, decisioni su clienti critici.", inputs:"Report Ester", outputs:"Decisioni direzionali" }
+    ],
+    docs:[
+      { name:"Scadenziario clienti", when:"Aggiornato in tempo reale" },
+      { name:"Distinta RIBA", when:"Periodica" },
+      { name:"Lettera di sollecito (PEC)", when:"+15 giorni dalla scadenza" }
+    ]
+  },
+  {
+    id:"p12",
+    title:"Archiviazione documentale e conservazione",
+    desc:"Archivio fisico e digitale, conservazione sostitutiva delle fatture elettroniche, gestione documentale per area di competenza.",
+    trigger:"Generazione/ricezione documento da conservare",
+    output:"Documenti conservati a norma e ricercabili",
+    sla:"Conservazione fatture elettroniche annuale · 10 anni di conservazione · ricerca documento < 1 ora",
+    activities:[
+      { n:1, person:"cristina", what:"Archivio rapportini, DDT e fogli di lavoro", desc:"Digitalizzazione e classificazione di rapportini, fogli di lavoro, DDT, consuntivi per cliente/commessa.", inputs:"Documenti operativi", outputs:"Archivio operativo per cliente" },
+      { n:2, person:"ester", what:"Conservazione sostitutiva fatture elettroniche", desc:"Affidamento delle fatture XML al servizio di conservazione (Agenzia delle Entrate o provider), verifica annuale.", inputs:"Fatture attive e passive", outputs:"Conservazione 10 anni" },
+      { n:3, person:"ester", what:"Archivio bilanci e documenti fiscali", desc:"Conservazione di registri IVA, libro giornale, bilanci, dichiarazioni fiscali, documenti societari.", inputs:"Output gestionale, dichiarazioni", outputs:"Archivio fiscale" },
+      { n:4, person:"egorletta", what:"Archivio pratiche compliance", desc:"Conservazione di pratiche FGAS, CURIT, MEPA, ZTL, ambiente (FIR), sicurezza (DUVRI/POS).", inputs:"Pratiche emesse", outputs:"Archivio compliance ricercabile" },
+      { n:5, person:"marco", what:"Archivio progetti e disegni", desc:"Conservazione di progetti esecutivi, disegni as-built, programmi PLC, pratiche ENEA.", inputs:"Output PM commessa", outputs:"Archivio tecnico per commessa" },
+      { n:6, person:"cristina", what:"Gestione consensi privacy GDPR", desc:"Raccolta informativa privacy per nuovi clienti, aggiornamento registro trattamenti.", inputs:"Anagrafica cliente", outputs:"Consensi registrati" }
+    ],
+    docs:[
+      { name:"Conservazione fatture elettroniche", when:"Annuale, 10 anni" },
+      { name:"Archivio progetti / disegni", when:"Per ogni commessa" },
+      { name:"Archivio pratiche compliance", when:"Aggiornamento continuo" },
+      { name:"Registro trattamenti GDPR", when:"Aggiornamento continuo" }
+    ]
+  },
+  {
+    id:"p13",
+    title:"Interventi su chiamata (richiesta del cliente)",
+    desc:"Gestione end-to-end di un intervento on-demand: dal contatto cliente, eventuale onboarding nuovo cliente con tariffario+cauzione, apertura chiamata, esecuzione, foglio di lavoro, fatturazione con controllo Milena e invio SDI.",
+    trigger:"Cliente contatta MR Centro Clima richiedendo un intervento (telefono, email, WhatsApp)",
+    output:"Intervento eseguito · foglio inviato al cliente · fattura SDI accettata",
+    sla:"Foglio inviato al cliente entro 3 gg · fattura emessa entro 7 gg dall'intervento",
+    issues:[
+      { title:"Tempi lunghi tra intervento e invio foglio di lavoro al cliente", desc:"Oggi passa da qualche giorno a qualche settimana tra l'esecuzione dell'intervento e l'invio del foglio al cliente. Il cliente percepisce lentezza, e i fogli si accumulano sul desk di Cristina/Ester.", fix:"SLA chiaro 'foglio entro 3 gg dall'intervento' con dashboard di backlog visibile a tutti. Invio automatico al cliente non appena Emanuele DM mette lo stato 'da inviare al cliente' (o approvazione veloce di Cristina)." },
+      { title:"Tempi lunghi tra intervento e fatturazione (1-4 settimane)", desc:"Tra esecuzione e invio fattura SDI passa da una settimana a 3/4 settimane. Allunga il DSO, blocca cassa, espone a contestazioni del cliente lontano dall'evento.", fix:"Target 'fattura SDI entro 7 gg' con cruscotto interventi chiusi non fatturati > X gg. Eliminare il passaggio cartaceo del raccoglitore (sotto)." },
+      { title:"Fattura SDI senza allegato il foglio di lavoro", desc:"La fattura inviata al cliente via SDI non porta in allegato il foglio di lavoro firmato. Il cliente riceve solo l'importo senza il dettaglio dell'intervento, aumentando i ritorni amministrativi e i solleciti per ricevere il foglio.", fix:"Allegare automaticamente il foglio di lavoro PDF alla fattura XML (campo 'Allegati' del tracciato FatturaPA). Configurazione una tantum nel gestionale." },
+      { title:"Preventivi di riparazione bloccati in bozza", desc:"Quando il tecnico segnala in foglio che serve un preventivo, Emanuele DM crea una bozza con riferimento 'DA FARE'. La bozza resta lì fino a quando Alessandro o Luigi 'aprono i preventivi in bozza' e li lavorano: i tempi sono lunghi e variabili. Capita che, se il tecnico solleciti, il preventivo arrivi al cliente PRIMA del foglio di lavoro che lo motiva — esperienza incoerente per il cliente.", fix:"Routine fissa (es. ogni venerdì) di lavorazione dei preventivi 'DA FARE' con owner chiaro (Alessandro per impianti standard, Luigi per impianti complessi). Vincolo: il preventivo non parte se il foglio di lavoro non è stato già inviato al cliente." },
+      { title:"Comunicazione cauzione 'a voce' Ester→Cristina", desc:"Quando un nuovo cliente paga la cauzione, Ester comunica a voce a Cristina che può procedere. Trasferimento di informazione fragile: dipende dalla compresenza, può sfuggire o essere ricordato male.", fix:"Notifica/task automatica nel gestionale al matching del bonifico cauzione → Cristina vede 'cliente abilitato' senza bisogno di passaggio orale." },
+      { title:"Raccoglitore cartaceo alfabetico Cristina→Ester→Milena", desc:"Il foglio di lavoro stampato finisce in un raccoglitore alfabetico. Ester lo prende periodicamente. Stessa filiera per il controllo di Milena (cartaceo pinzato). Ridondanza: tutto è già nel gestionale.", fix:"Workflow digitale: Cristina cambia stato a 'pronto fatturazione', Ester emette fattura, Milena controlla via task in gestionale, sigla digitale o flag 'controllata'. Eliminare la stampa." }
+    ],
+    activities:[
+      { n:1, person:"cliente", what:"Contatto cliente con richiesta intervento", desc:"Telefonata, email, eventualmente WhatsApp per richiedere intervento (assistenza, riparazione, sopralluogo, censimento).", inputs:"Canali di contatto", outputs:"Richiesta in ingresso", sistema:"Telefono / email", tempo:"Spontaneo" },
+      { n:2, person:"cristina", what:"Risposta al cliente", desc:"Cristina risponde, qualifica la richiesta, raccoglie dati di base (chi chiama, contatto, motivo, urgenza, indirizzo impianto).", inputs:"Contatto cliente", outputs:"Informazioni raccolte", sistema:"Telefono / email", tempo:"Stesso giorno" },
+      { n:3, person:"cristina", what:"[Cliente nuovo] Invio tariffario", desc:"Per i nuovi clienti, Cristina invia il tariffario standard chiedendo accettazione, compilazione dati anagrafici e versamento cauzione.", inputs:"Tariffario standard, dati cliente", outputs:"Tariffario inviato", sistema:"Email", tempo:"Stesso giorno" },
+      { n:4, person:"cliente", what:"[Cliente nuovo] Firma tariffario e pagamento cauzione", desc:"Cliente accetta il tariffario, lo restituisce firmato con i suoi dati, effettua il bonifico della cauzione.", inputs:"Tariffario, dati anagrafici", outputs:"Tariffario firmato + bonifico cauzione", sistema:"Email + bonifico", tempo:"Variabile (giorni)" },
+      { n:5, person:"ester", what:"[Cliente nuovo] Verifica cauzione e comunicazione (PUNTO CRITICO)", desc:"Ester vede l'arrivo del bonifico, comunica a Cristina A VOCE che la cauzione è stata pagata. Comunicazione fragile, dipendente dalla compresenza.", inputs:"Estratto conto bancario", outputs:"OK comunicato a voce a Cristina", sistema:"Bonifico → comunicazione orale", tempo:"Stesso giorno", critico:{ livello:"medio", motivo:"Trasferimento info a voce, fragile e non tracciato", suggerimento:"Notifica/task automatica nel gestionale al match del bonifico" } },
+      { n:6, person:"cristina", what:"[Cliente nuovo] Inserimento cliente con tariffario", desc:"Cristina crea l'anagrafica del nuovo cliente nel gestionale. IMPORTANTE: allega il PDF del tariffario firmato all'anagrafica E imposta il tariffario accettato nel campo specifico del gestionale, così la fatturazione applicherà automaticamente le tariffe corrette.", inputs:"Tariffario firmato, dati anagrafici", outputs:"Cliente attivo nel gestionale + tariffario applicato", sistema:"Gestionale", tempo:"Stesso giorno della comunicazione cauzione" },
+      { n:7, person:"cristina", what:"Apertura chiamata con descrizione richiesta (PUNTO CRITICO)", desc:"Cristina apre la chiamata sul gestionale con descrizione DETTAGLIATA della richiesta del cliente, e annota nome, cognome e contatto della persona che ha richiesto l'intervento (può non essere lo stesso intestatario contrattuale). Una descrizione povera qui crea problemi al tecnico in campo e nelle gestioni successive.", inputs:"Informazioni dal cliente", outputs:"Chiamata aperta a sistema con descrizione completa", sistema:"Gestionale", tempo:"Al momento del contatto", critico:{ livello:"alto", motivo:"Descrizione povera = errori a valle (tecnico, fatturazione, contestazioni)", suggerimento:"Template obbligatorio con campi: cosa segnala, dove, persona di contatto sul posto, urgenza, accessi/orari" } },
+      { n:8, person:"cristina", what:"Pianificazione chiamata sul planning", desc:"Cristina inserisce la chiamata nel planning del gestionale, solitamente già al momento dell'apertura. Assegna data, fascia oraria e tecnico.", inputs:"Chiamata aperta, calendario tecnici", outputs:"Intervento schedulato", sistema:"Gestionale", tempo:"Contestuale all'apertura chiamata" },
+      { n:9, person:"cristina", what:"Conferma telefonica al cliente", desc:"Cristina chiama il cliente per confermare giorno e fascia oraria dell'intervento.", inputs:"Pianificazione", outputs:"Appuntamento confermato", sistema:"Telefono", tempo:"Prima dell'intervento" },
+      { n:10, person:"tecnici", what:"Esecuzione intervento + foglio di lavoro", desc:"Il tecnico riceve la pianificazione su Google Calendar e sull'app del gestionale. In sito esegue l'intervento, compila il foglio di lavoro sull'app, se la macchina non è ancora censita ne fa censimento, se serve un preventivo rileva i dati per la riparazione, fa firmare il foglio sul cellulare e sincronizza l'intervento.", inputs:"Pianificazione, app, macchina del cliente", outputs:"Foglio di lavoro firmato + censimento + dati per preventivo (se richiesto)", sistema:"Google Calendar + App gestionale", tempo:"Giorno dell'intervento" },
+      { n:11, person:"edemomi", what:"Lettura foglio + flag 'da inviare al cliente'", desc:"Emanuele De Momi apre il foglio nel gestionale, lo verifica, lo mette in stato 'da inviare al cliente'. Se nel foglio è indicato 'serve preventivo', genera anche una bozza di preventivo con riferimento 'DA FARE' che alimenta il flow preventivi di riparazione.", inputs:"Rapportino chiuso dal tecnico", outputs:"Foglio in stato 'da inviare al cliente' + eventuale bozza preventivo 'DA FARE'", sistema:"Gestionale", tempo:"Entro 1-3 gg dalla chiusura (target)" },
+      { n:12, person:"alessandro", what:"Lavorazione preventivi 'DA FARE' (PUNTO CRITICO)", desc:"Alessandro (o Luigi per impianti complessi) periodicamente apre i preventivi in bozza con riferimento 'DA FARE', li completa con prezzi e condizioni, li invia al cliente. Tempi variabili e lunghi: capita che il preventivo arrivi al cliente prima del foglio di lavoro, generando esperienza cliente incoerente.", inputs:"Bozze 'DA FARE' nel gestionale", outputs:"Preventivi completati e inviati", sistema:"Gestionale + email", tempo:"Variabile (settimane)", critico:{ livello:"alto", motivo:"Tempi lunghi e ordine non garantito rispetto al foglio di lavoro", suggerimento:"Routine fissa settimanale (es. ogni venerdì) · vincolo: preventivo NON parte prima del foglio di lavoro al cliente" } },
+      { n:13, person:"cristina", what:"Invio foglio di lavoro al cliente (PUNTO CRITICO TEMPI)", desc:"Cristina invia al cliente il foglio di lavoro firmato; per i clienti che lo richiedono, allega anche il consuntivo dei costi. Oggi tra esecuzione e invio passano giorni o settimane.", inputs:"Foglio in stato 'da inviare al cliente'", outputs:"Foglio inviato al cliente (+consuntivo se richiesto)", sistema:"Email + gestionale", tempo:"Da pochi giorni a qualche settimana (oggi)", critico:{ livello:"alto", motivo:"Tempi lunghi · target 3 gg dall'intervento", suggerimento:"Invio automatico/semi-automatico al cambio di stato · dashboard di backlog" } },
+      { n:14, person:"cristina", what:"Stampa foglio + raccoglitore alfabetico per Ester (PUNTO CRITICO)", desc:"Cristina stampa il foglio di lavoro e lo deposita fisicamente nel raccoglitore di Ester, organizzato alfabeticamente per nome cliente. Ridondante: tutto è già nel gestionale.", inputs:"Foglio inviato al cliente", outputs:"Foglio nel raccoglitore di Ester", sistema:"Cartaceo (raccoglitore alfabetico)", tempo:"Subito dopo l'invio al cliente", critico:{ livello:"alto", motivo:"Passaggio cartaceo ridondante · rallenta la fatturazione", suggerimento:"Stato 'pronto fatturazione' direttamente nel gestionale, visibile a Ester · zero stampa" } },
+      { n:15, person:"ester", what:"Prelievo periodico dal raccoglitore + fatturazione (PUNTO CRITICO TEMPI)", desc:"Ester prende periodicamente i fogli dal raccoglitore (ordine alfabetico) e fattura. La periodicità non è giornaliera, contribuisce ai tempi lunghi.", inputs:"Raccoglitore cartaceo", outputs:"Fatture predisposte", sistema:"Cartaceo + gestionale", tempo:"Periodica (qualche giorno fino a settimane)", critico:{ livello:"alto", motivo:"Ritardo accumulato sulla fatturazione", suggerimento:"Coda digitale 'pronto fatturazione' lavorata almeno 2x/settimana" } },
+      { n:16, person:"ester", what:"Stampa fattura + pinza al foglio + a Milena", desc:"Ester stampa la fattura, la pinza al foglio di lavoro originale e lascia il pacchetto a Milena per il controllo.", inputs:"Fattura predisposta", outputs:"Pacchetto cartaceo (fattura + foglio) per Milena", sistema:"Gestionale + cartaceo", tempo:"Stesso giorno della fatturazione" },
+      { n:17, person:"milena", what:"Controllo fattura e sigla", desc:"Milena verifica che la fattura corrisponda al foglio di lavoro, controlla importi e tariffe, e sigla la fattura come controllata.", inputs:"Fattura + foglio pinzati", outputs:"Fattura controllata e siglata", sistema:"Cartaceo (sigla)", tempo:"Routinario" },
+      { n:18, person:"ester", what:"Trasmissione SDI (PUNTO CRITICO ALLEGATO)", desc:"Ester emette e invia la fattura elettronica via SDI. PROBLEMA: la fattura SDI non porta in allegato il foglio di lavoro, anche se questo è stato controllato e siglato.", inputs:"Fattura controllata da Milena", outputs:"Fattura XML trasmessa allo SDI", sistema:"Gestionale → SDI", tempo:"Subito dopo il controllo Milena", critico:{ livello:"medio", motivo:"Fattura senza allegato foglio = ritorni amministrativi e contestazioni", suggerimento:"Allegare automaticamente il foglio di lavoro PDF al tracciato FatturaPA" } }
+    ],
+    docs:[
+      { name:"Tariffario standard", when:"Inviato per ogni nuovo cliente" },
+      { name:"Tariffario firmato + cauzione", when:"Allegato all'anagrafica del cliente nel gestionale" },
+      { name:"Chiamata con descrizione richiesta", when:"Aperta al primo contatto" },
+      { name:"Foglio di lavoro firmato (digitale)", when:"Compilato in app dal tecnico" },
+      { name:"Preventivo riparazione (bozza 'DA FARE' → finale)", when:"Generato dopo il foglio di lavoro" },
+      { name:"Foglio di lavoro stampato", when:"Nel raccoglitore alfabetico di Ester" },
+      { name:"Fattura cartacea + foglio pinzato", when:"Per controllo Milena" },
+      { name:"Fattura elettronica SDI", when:"Inviata dopo controllo Milena (oggi senza allegato foglio)" }
+    ]
+  },
+  {
+    id:"p14",
+    title:"Commesse di riparazione (preventivo → esecuzione → fatturazione)",
+    desc:"Dal preventivo di riparazione 'DA FARE' (alimentato da P13) all'invio della fattura SDI: lavorazione preventivo, ordine e ricezione materiale, pianificazione, esecuzione, fatturazione. Processo con tempi spesso lunghi e commesse 'ferme' senza un trigger sistematico di pianificazione.",
+    trigger:"Bozza preventivo 'DA FARE' creata da Emanuele DM (vedi P13 attività #11)",
+    output:"Commessa eseguita · cliente fatturato · fattura SDI accettata",
+    sla:"Preventivo entro 1 settimana dalla bozza · pianificazione entro 1 settimana dalla ricezione materiale · fatturazione entro 7 gg dalla chiusura",
+    issues:[
+      { title:"Preventivi 'DA FARE' lavorati in modo non sistematico", desc:"Alessandro o Luigi aprono periodicamente l'elenco delle bozze 'DA FARE'. Senza un ritmo fisso, alcune bozze restano ferme a lungo, altre vengono lavorate solo se il tecnico solleciti.", fix:"Routine fissa settimanale (es. ogni venerdì) di lavorazione preventivi 'DA FARE' con owner chiaro: Alessandro per impianti standard, Luigi per impianti complessi. KPI 'lead time bozza→invio'." },
+      { title:"Materiale non codificato a listino", desc:"La maggior parte del materiale usato nei preventivi di riparazione non è codificato — non ci sono listini caricati aggiornati con i codici. Quasi tutte le righe del preventivo sono testo libero. Conseguenze: tempi più lunghi per fare il preventivo, errori di prezzo, difficoltà a fare ordini di acquisto coerenti, impossibilità di analizzare marginalità per articolo.", fix:"Programma di codifica progressiva: identificare i 50 articoli più ricorrenti nei preventivi degli ultimi 12 mesi, codificarli a listino con prezzi aggiornati, costringere chi fa preventivo a usarli quando esistono. Aggiungere ogni nuova codifica man mano. Owner: Marco (acquisto materiali commessa) o Alessandro/Luigi." },
+      { title:"Manca routine di pianificazione delle commesse aperte", desc:"Oggi NON c'è una routine che consulti sistematicamente l'elenco delle commesse aperte per decidere quali pianificare. Nessuno ha questo compito formalmente: se Alessandro/Luigi se ne ricordano o se il cliente solleciti, la commessa viene programmata; altrimenti resta ferma anche mesi.", fix:"Riunione settimanale fissa Cristina + Luigi/Alessandro (15-20 min, es. lunedì mattina) con cruscotto 'Commesse aperte da pianificare' del gestionale. Per ciascuna: stato materiale, priorità, decisione di pianificazione." },
+      { title:"Pianificazione bloccata da 'materiale non tutto arrivato'", desc:"Capita che Cristina ritenga di non poter pianificare la commessa perché alcune righe materiali non risultano arrivate. In realtà spesso si tratta di pochi pezzi che sono già a magazzino o facilmente recuperabili dal fornitore. Risultato: commesse pronte che restano ferme.", fix:"Nella riunione settimanale verificare per ciascuna commessa 'in attesa materiale' cosa manca davvero e se è recuperabile a stretto giro. Soglia: 'commessa pianificabile se materiale critico arrivato o ordinabile entro 48h'." },
+      { title:"Non chiaro chi-fa-cosa-quando sulla commessa", desc:"Per le commesse di riparazione non è strutturato: quali tecnici possono fare quale tipologia di intervento, quanti giorni servono, quante persone. La pianificazione avviene 'a sensazione'.", fix:"Per le tipologie ricorrenti, definire una scheda standard: competenze tecnico richieste (frigorista F-Gas, elettrico, idraulico), durata media, numero persone. Alimentarla nel gestionale come template di commessa." },
+      { title:"Cliente non aggiornato sullo stato di avanzamento", desc:"Tra accettazione preventivo e giorno -1 dell'intervento il cliente non riceve aggiornamenti: non sa se il materiale è arrivato, quando ci aspettiamo di intervenire, perché stiamo aspettando. Genera chiamate di sollecito e percezione di lentezza.", fix:"Tre comunicazioni standard al cliente sulla commessa: (1) ordine confermato, materiale in arrivo (data attesa); (2) materiale ricevuto, in pianificazione; (3) data intervento confermata. Template email pre-compilati nel gestionale, automatici sui cambi di stato." },
+      { title:"Accumulo fogli di lavoro su commesse lunghe", desc:"Sulle commesse di riparazione lunghe (più giorni, più tecnici) si accumulano decine di fogli di lavoro che vengono inviati al cliente solo a fine commessa. Il cliente vede tutto insieme, fatica a verificare, e l'invio massiccio è oneroso per Cristina.", fix:"Invio incrementale: fogli inviati al cliente ad ogni 'milestone' della commessa (settimanale o per fase tecnica conclusa). Il cliente verifica progressivamente, nessun accumulo finale." },
+      { title:"Fattura tardiva rispetto alla chiusura commessa", desc:"La fattura arriva al cliente molto in ritardo rispetto alla conclusione effettiva della commessa, per la combinazione di: accumulo fogli, raccoglitore cartaceo, prelievo periodico Ester (cfr. P13).", fix:"Stato 'pronto fatturazione' digitale visibile a Ester · target 'fattura SDI entro 7 gg da fine commessa' · cruscotto interventi chiusi non fatturati > X gg." }
+    ],
+    activities:[
+      { n:1, person:"edemomi", what:"Bozza preventivo 'DA FARE' (trigger da P13)", desc:"Trigger di ingresso: Emanuele De Momi ha generato una bozza di preventivo dopo aver letto un foglio di lavoro on-call con segnalazione 'serve preventivo' (vedi P13 attività #11).", inputs:"Foglio di lavoro on-call con segnalazione preventivo", outputs:"Bozza preventivo 'DA FARE' nel gestionale", sistema:"Gestionale", tempo:"Entro 1-3 gg dalla chiusura intervento" },
+      { n:2, person:"alessandro", what:"Apertura periodica elenco preventivi 'DA FARE' (PUNTO CRITICO)", desc:"Alessandro (impianti standard) o Luigi (impianti complessi) aprono periodicamente l'elenco delle bozze. Periodicità non fissa, alcune bozze restano ferme a lungo, altre vengono lavorate solo se il tecnico solleciti.", inputs:"Coda preventivi 'DA FARE'", outputs:"Bozza presa in carico", sistema:"Gestionale", tempo:"Variabile (settimanale o più)", critico:{ livello:"alto", motivo:"Routine non strutturata · alcuni preventivi restano fermi", suggerimento:"Routine fissa settimanale · KPI lead time bozza→invio · owner chiaro per tipologia" } },
+      { n:3, person:"alessandro", what:"Lettura foglio di lavoro e note del tecnico", desc:"Alessandro/Luigi leggono il foglio di lavoro chiuso, le note del tecnico, le foto allegate, per capire il guasto e il materiale necessario alla riparazione.", inputs:"Foglio di lavoro, note, foto", outputs:"Comprensione del guasto", sistema:"Gestionale", tempo:"15-30 min" },
+      { n:4, person:"alessandro", what:"Chiamata al tecnico per info aggiuntive (se necessario)", desc:"Se le informazioni nel foglio non sono sufficienti, Alessandro/Luigi telefonano al tecnico per chiarire dettagli (modello pezzo, accessibilità, fattibilità).", inputs:"Dubbi sul guasto", outputs:"Info aggiuntive raccolte", sistema:"Telefono", tempo:"5-15 min per chiamata" },
+      { n:5, person:"alessandro", what:"Redazione preventivo (PUNTO CRITICO codifica)", desc:"Alessandro/Luigi compilano il preventivo elencando materiale e manodopera. Problema: la maggior parte del materiale non è codificato, non ci sono listini caricati aggiornati con i codici, quasi tutte le righe sono testo libero. Conseguenze: tempi più lunghi, rischio errori di prezzo, difficoltà a fare ordini coerenti dopo, impossibilità di analizzare marginalità per articolo.", inputs:"Comprensione guasto, listini parziali, esperienza", outputs:"Preventivo testuale (con righe non codificate)", sistema:"Gestionale (testo libero)", tempo:"30-60 min", critico:{ livello:"alto", motivo:"Materiale non a listino, righe non codificate", suggerimento:"Codificare i 50 articoli più ricorrenti e renderli obbligatori quando esistono" } },
+      { n:6, person:"alessandro", what:"Invio preventivo al cliente", desc:"Trasmissione del preventivo al cliente via email/PEC, con condizioni e validità.", inputs:"Preventivo", outputs:"Preventivo inviato", sistema:"Email/PEC + gestionale", tempo:"Stesso giorno della redazione" },
+      { n:7, person:"cliente", what:"Accettazione preventivo", desc:"Conferma scritta da parte del cliente. Se non accetta, chiusura senza commessa.", inputs:"Preventivo", outputs:"Conferma scritta", sistema:"Email", tempo:"Variabile" },
+      { n:8, person:"alessandro", what:"Apertura commessa + ordini di acquisto", desc:"Alessandro/Luigi inseriscono la commessa nel gestionale e generano gli ordini di acquisto del materiale necessario.", inputs:"Preventivo accettato", outputs:"Commessa aperta + ordini emessi", sistema:"Gestionale", tempo:"Stesso giorno dell'accettazione" },
+      { n:9, person:"fornitore", what:"Consegna materiale con DDT", desc:"Fornitore consegna in sede o cantiere con DDT.", inputs:"Ordine d'acquisto", outputs:"Merce + DDT", sistema:"DDT cartaceo + gestionale fornitore", tempo:"Variabile (1-15 gg)" },
+      { n:10, person:"cristina", what:"Carico DDT a sistema (riga verde)", desc:"Cristina carica il DDT nel gestionale scaricando la riga di ordine corrispondente. La riga della chiamata di commessa diventa verde, segnalando che il materiale è arrivato.", inputs:"DDT, ordine d'acquisto", outputs:"Riga commessa verde nel gestionale", sistema:"Gestionale", tempo:"Stesso giorno della consegna" },
+      { n:11, person:"cristina", what:"Valutazione 'pianificabilità' commessa (PUNTO CRITICO)", desc:"Cristina valuta se la commessa è pianificabile. Problema: a volte ritiene di no perché alcune righe non risultano scaricate, ma in realtà il materiale mancante è a magazzino oppure si trova facilmente dal fornitore. Risultato: commesse pronte ma ferme.", inputs:"Stato righe materiale, magazzino", outputs:"Decisione di pianificazione (talora errata)", sistema:"Gestionale", tempo:"Estemporanea", critico:{ livello:"medio", motivo:"Falsi 'non pianificabile' su righe di fatto disponibili", suggerimento:"Verifica nella riunione settimanale: cosa manca davvero, recuperabile in 48h?" } },
+      { n:12, person:"cristina", what:"Routine settimanale di pianificazione commesse aperte", desc:"Routine settimanale (target: lunedì mattina) tra Cristina + Luigi/Alessandro per consultare l'elenco delle commesse aperte, verificare lo stato del materiale, definire priorità e pianificare. Oggi questa routine NON esiste — è la principale causa di commesse ferme per mesi.", inputs:"Cruscotto commesse aperte", outputs:"Lista commesse pianificate per la settimana", sistema:"Gestionale + meeting (da costruire)", tempo:"Settimanale (target)", missing:true, critico:{ livello:"alto", motivo:"Oggi nessuno ha il compito di consultare l'elenco · commesse dimenticate per mesi", suggerimento:"Riunione fissa settimanale Cristina+Luigi/Alessandro · 15-20 min · cruscotto gestionale 'commesse aperte'" } },
+      { n:13, person:"cristina", what:"Pianificazione commessa (PUNTO CRITICO competenze)", desc:"Cristina pianifica l'intervento. Problema: non è strutturato quali tecnici possono fare quale tipologia di commessa, quanti giorni servono, quante persone. La pianificazione avviene 'a sensazione' o consultando di volta in volta i responsabili tecnici.", inputs:"Materiale disponibile, calendario tecnici", outputs:"Commessa schedulata", sistema:"Gestionale", tempo:"Stesso giorno della decisione di pianificare", critico:{ livello:"medio", motivo:"Mancano scheda competenze, durata, persone per tipologia", suggerimento:"Template 'tipologia commessa' con competenze richieste, durata media, persone tipiche" } },
+      { n:14, person:"alessandro", what:"Comunicazione cliente sullo stato avanzamento", desc:"Oggi tra accettazione preventivo e giorno -1 dell'intervento il cliente non riceve aggiornamenti. Genera chiamate di sollecito e percezione di lentezza. Servirebbero 3 comunicazioni standard: (1) ordine confermato/materiale in arrivo, (2) materiale ricevuto/in pianificazione, (3) data intervento confermata.", inputs:"Stato commessa", outputs:"Cliente aggiornato (oggi assente)", sistema:"Email (template da definire)", tempo:"3 milestone (target)", missing:true, critico:{ livello:"medio", motivo:"Cliente al buio fino al giorno -1 · solleciti, percezione di lentezza", suggerimento:"Tre email template (ordine→materiale→data) automatizzate sui cambi di stato della commessa" } },
+      { n:15, person:"tecnici", what:"Esecuzione intervento + foglio di lavoro", desc:"Il tecnico esegue la riparazione, compila il foglio di lavoro con le operazioni effettuate, fa firmare al cliente sull'app. Per commesse multi-giorno: più fogli di lavoro per la stessa commessa.", inputs:"Pianificazione, materiale, app", outputs:"Foglio/i di lavoro firmato/i", sistema:"App mobile", tempo:"Durata commessa (giorni o più)" },
+      { n:16, person:"edemomi", what:"Lettura foglio + chiusura commessa (PUNTO ATTENZIONE)", desc:"Emanuele De Momi legge i fogli di lavoro man mano. Solo quando la commessa è conclusa mette i fogli in stato 'da inviare al cliente'. Su commesse lunghe si accumulano decine di fogli che vengono trattati solo alla fine.", inputs:"Fogli di lavoro chiusi", outputs:"Fogli in stato 'da inviare al cliente' (a chiusura commessa)", sistema:"Gestionale", tempo:"A fine commessa (rischio accumulo)", critico:{ livello:"medio", motivo:"Su commesse lunghe accumulo di decine di fogli", suggerimento:"Invio incrementale per milestone settimanali · nessun accumulo finale" } },
+      { n:17, person:"cristina", what:"Invio fogli al cliente + stampa per Ester", desc:"Cristina invia i fogli al cliente (in blocco a fine commessa) e li stampa per consegnarli fisicamente a Ester (raccoglitore alfabetico, stesso meccanismo di P13).", inputs:"Fogli in stato 'da inviare al cliente'", outputs:"Fogli inviati cliente + cartaceo a Ester", sistema:"Email + cartaceo", tempo:"A fine commessa" },
+      { n:18, person:"ester", what:"Fatturazione commessa + stampa", desc:"Ester prende i fogli dal raccoglitore e fattura sul gestionale, poi stampa la fattura.", inputs:"Fogli cartacei dal raccoglitore", outputs:"Fattura predisposta e stampata", sistema:"Cartaceo + gestionale", tempo:"Periodica" },
+      { n:19, person:"milena", what:"Controllo e sigla fattura", desc:"Milena verifica fattura+foglio pinzati e sigla.", inputs:"Fattura cartacea + foglio", outputs:"Fattura controllata e siglata", sistema:"Cartaceo", tempo:"Routinario" },
+      { n:20, person:"ester", what:"Trasmissione SDI (fattura tardiva)", desc:"Invio della fattura elettronica via SDI. Per la combinazione di accumulo fogli + raccoglitore + prelievo periodico, la fattura arriva al cliente molto in ritardo rispetto alla chiusura effettiva della commessa.", inputs:"Fattura siglata", outputs:"Fattura XML trasmessa allo SDI", sistema:"Gestionale → SDI", tempo:"Subito dopo controllo Milena (ma a valle di tutti i ritardi precedenti)", critico:{ livello:"alto", motivo:"Fattura tardiva rispetto a fine commessa", suggerimento:"Stato 'pronto fatturazione' digitale + target 7 gg da fine commessa" } }
+    ],
+    docs:[
+      { name:"Bozza preventivo 'DA FARE'", when:"Generata da Emanuele DM" },
+      { name:"Preventivo riparazione (con righe spesso non codificate)", when:"Inviato al cliente" },
+      { name:"Conferma cliente", when:"All'accettazione" },
+      { name:"Ordine d'acquisto", when:"Emesso da Alessandro/Luigi" },
+      { name:"DDT in entrata", when:"Alla consegna materiale" },
+      { name:"Foglio di lavoro firmato (digitale)", when:"Per ogni intervento sulla commessa" },
+      { name:"Fattura cartacea + foglio (per controllo Milena)", when:"Pre-SDI" },
+      { name:"Fattura elettronica SDI", when:"Inviata dopo controllo Milena" }
+    ]
+  }
+];
+
+// ---------- Flowcharts (Mermaid) ----------
+const FLOW_CLASSDEFS = `
+classDef giulia    fill:#fef3c7,stroke:#b45309,color:#7c2d12,stroke-width:1.5px
+classDef alessandro fill:#ffe4e6,stroke:#be123c,color:#881337,stroke-width:1.5px
+classDef marco     fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a,stroke-width:1.5px
+classDef luigi     fill:#ccfbf1,stroke:#0f766e,color:#134e4a,stroke-width:1.5px
+classDef edemomi   fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:1.5px
+classDef egorletta fill:#dcfce7,stroke:#15803d,color:#14532d,stroke-width:1.5px
+classDef cristina  fill:#ede9fe,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px
+classDef ester     fill:#d1fae5,stroke:#059669,color:#064e3b,stroke-width:1.5px
+classDef milena    fill:#fce7f3,stroke:#db2777,color:#831843,stroke-width:1.5px
+classDef tecnici   fill:#e2e8f0,stroke:#475569,color:#0f172a,stroke-width:1.5px
+classDef cliente   fill:#f1f5f9,stroke:#334155,color:#0f172a,stroke-width:1.5px
+classDef fornitore fill:#fef3c7,stroke:#92400e,color:#78350f,stroke-width:1.5px
+classDef clivet    fill:#e0f2fe,stroke:#0c4a6e,color:#082f49,stroke-width:1.5px
+classDef cm        fill:#ede9fe,stroke:#6d28d9,color:#4c1d95,stroke-width:1.5px
+classDef ext       fill:#0f172a,stroke:#0f172a,color:#fff
+classDef decision  fill:#fff7ed,stroke:#c2410c,color:#7c2d12,stroke-width:1.5px
+classDef endnode   fill:#0ea5e9,stroke:#0369a1,color:#fff
+`;
+
+const FLOWS = {
+  p1: `flowchart TD
+  Trigger([Ciclo annuale / mensile]):::ext
+  G1[Giulia: pianificazione strategica]
+  G2[Giulia: budget e investimenti]
+  G3[Giulia: contatto banche]
+  G4[Coordinamento commercialista e paghe]
+  G5[Giulia + Ester: revisione mensile fatturato/incassi]
+  Q1{Andamento in linea?}:::decision
+  G6[Decisioni correttive]
+  Q2{Cliente chiave da seguire?}:::decision
+  G7[Consulenza diretta cliente chiave]
+  G8[Definizione deleghe progettazione/PLC/collaudi]
+  Endn([Indirizzo strategico aggiornato]):::endnode
+  Trigger --> G1 --> G2 --> G3 --> G4 --> G5 --> Q1
+  Q1 -->|no| G6 --> Q2
+  Q1 -->|sì| Q2
+  Q2 -->|sì| G7 --> G8
+  Q2 -->|no| G8
+  G8 --> Endn
+  class G1,G2,G3,G4,G5,G6,G7,G8 giulia
+  ${FLOW_CLASSDEFS}`,
+
+  p2: `flowchart TD
+  Start([Richiesta cliente]):::ext
+  C1[Cristina: ricezione e instradamento]
+  A1[Alessandro: contatto e qualifica]
+  Q1{Cliente chiave?}:::decision
+  GG[Giulia: presidio commerciale]
+  Q2{Impianto complesso?}:::decision
+  S1[Sopralluogo Alessandro + Marco/Luigi]
+  S2[Alessandro: sopralluogo standard]
+  M1[Marco: distinta tecnica]
+  Q3{Installazione particolare?}:::decision
+  L1[Luigi: preventivo tecnico]
+  A2[Alessandro: preventivo standard]
+  A3[Alessandro: invio preventivo + follow-up]
+  Q4{Cliente accetta?}:::decision
+  Open([Commessa aperta]):::endnode
+  Lost([Lead chiuso]):::ext
+  Start --> C1 --> A1 --> Q1
+  Q1 -->|sì| GG --> Q2
+  Q1 -->|no| Q2
+  Q2 -->|sì| S1 --> M1 --> Q3
+  Q2 -->|no| S2 --> Q3
+  Q3 -->|sì| L1 --> A3
+  Q3 -->|no| A2 --> A3
+  A3 --> Q4
+  Q4 -->|sì| Open
+  Q4 -->|no| Lost
+  class C1 cristina
+  class A1,A2,A3,S2 alessandro
+  class S1,M1 marco
+  class L1 luigi
+  class GG giulia
+  ${FLOW_CLASSDEFS}`,
+
+  p3: `flowchart TD
+  Start([Commessa accettata]):::ext
+  M1[Marco: progetto esecutivo]
+  M2[Marco: ordini materiale di commessa]
+  M3[Marco: PM commessa]
+  T1[Tecnici: esecuzione cantiere]
+  Q1{Problema tecnico in cantiere?}:::decision
+  ML[Marco/Luigi: supporto decisionale]
+  Q2{Regolazioni / PLC?}:::decision
+  PLC[Marco + Luigi: programmazione PLC e supervisioni]
+  M4[Marco: disegni as-built]
+  Q3{Pratica ENEA applicabile?}:::decision
+  ENEA[Marco: pratica ENEA]
+  Endn([Commessa chiusa]):::endnode
+  Start --> M1 --> M2 --> M3 --> T1 --> Q1
+  Q1 -->|sì| ML --> Q2
+  Q1 -->|no| Q2
+  Q2 -->|sì| PLC --> M4
+  Q2 -->|no| M4
+  M4 --> Q3
+  Q3 -->|sì| ENEA --> Endn
+  Q3 -->|no| Endn
+  class M1,M2,M3,M4,ENEA marco
+  class ML,PLC marco
+  class T1 tecnici
+  ${FLOW_CLASSDEFS}`,
+
+  p4: `flowchart TD
+  Start([Cliente contatta]):::cliente
+  C1[Cristina: risponde al telefono]
+  C2[Cristina: apre ticket gestionale]
+  Q1{Tipo richiesta}:::decision
+  C3[Cristina: instrada al ruolo competente]
+  Q2{Impianto Clivet in garanzia?}:::decision
+  C4[Cristina: apre TASK Clivet]
+  CV[Clivet: risposta tecnica / garanzia]
+  C5[Cristina: chiude TASK e informa cliente]
+  Endn([Richiesta evasa]):::endnode
+  Start --> C1 --> C2 --> Q1
+  Q1 -->|tecnica/comm./amm.| C3 --> Endn
+  Q1 -->|assistenza impianto| Q2
+  Q2 -->|sì| C4 --> CV --> C5 --> Endn
+  Q2 -->|no| C3
+  class C1,C2,C3,C4,C5 cristina
+  class CV clivet
+  ${FLOW_CLASSDEFS}`,
+
+  p5: `flowchart TD
+  Start([Ticket tecnico]):::ext
+  P1[Cristina: pianifica intervento]
+  Q1{Materiale a magazzino?}:::decision
+  Cycle[Attiva ciclo passivo - vedi P9]
+  P2[Cristina: ricezione DDT in entrata]
+  P3[Cristina: inserisce DDT su gestionale]
+  Q2{Commessa complessa?}:::decision
+  M1[Marco: coordina materiale specialistico]
+  P4[Cristina: picking e preparazione]
+  P5[Cristina: foglio di lavoro al tecnico]
+  Endn([Intervento pronto]):::endnode
+  Start --> P1 --> Q1
+  Q1 -->|no| Cycle --> P2 --> P3 --> Q2
+  Q1 -->|sì| Q2
+  Q2 -->|sì| M1 --> P4
+  Q2 -->|no| P4
+  P4 --> P5 --> Endn
+  class P1,P2,P3,P4,P5 cristina
+  class M1 marco
+  class Cycle ext
+  ${FLOW_CLASSDEFS}`,
+
+  p6: `flowchart TD
+  Start([Foglio di lavoro consegnato]):::ext
+  T1[Tecnici: esegue + foglio firmato]
+  E1[Emanuele DM: lettura foglio]
+  Q1{Anomalie / lavori extra?}:::decision
+  L1[Luigi: gestione anomalia tecnica]
+  Q2{Supervisione remota attiva?}:::decision
+  E2[Emanuele DM: monitoraggio supervisioni]
+  Q3{Cliente lamenta?}:::decision
+  Q4{Cliente chiave?}:::decision
+  G1[Giulia: consulenza diretta]
+  L2[Luigi: gestione lamentela e azione correttiva]
+  C1[Cristina: prepara fogli per fatturazione]
+  C2[Cristina: redige consuntivo]
+  Endn([Pronto per fatturazione]):::endnode
+  Start --> T1 --> E1 --> Q1
+  Q1 -->|sì| L1 --> Q2
+  Q1 -->|no| Q2
+  Q2 -->|sì| E2 --> Q3
+  Q2 -->|no| Q3
+  Q3 -->|sì| Q4
+  Q3 -->|no| C1
+  Q4 -->|sì| G1 --> L2 --> C1
+  Q4 -->|no| L2 --> C1
+  C1 --> C2 --> Endn
+  class T1 tecnici
+  class E1,E2 edemomi
+  class L1,L2 luigi
+  class G1 giulia
+  class C1,C2 cristina
+  ${FLOW_CLASSDEFS}`,
+
+  p7: `flowchart TD
+  Start([Evento da gestire]):::ext
+  Q1{Tipo evento}:::decision
+  G1[Egorletta: pratica sicurezza cantiere]
+  G2[Egorletta: FIR e smaltimento rifiuti]
+  G3[Egorletta: permessi ZTL]
+  G4[Egorletta: gara MEPA per PA]
+  G5[Egorletta: registrazione intervento FGAS]
+  G6[Egorletta: registrazione CURIT]
+  M1[Marco: pratica ENEA]
+  Arch([Pratica archiviata]):::endnode
+  Start --> Q1
+  Q1 -->|cantiere| G1 --> Arch
+  Q1 -->|rifiuti| G2 --> Arch
+  Q1 -->|accesso ZTL| G3 --> Arch
+  Q1 -->|gara PA| G4 --> Arch
+  Q1 -->|FGAS| G5 --> Arch
+  Q1 -->|CURIT| G6 --> Arch
+  Q1 -->|ENEA / efficientamento| M1 --> Arch
+  class G1,G2,G3,G4,G5,G6 egorletta
+  class M1 marco
+  ${FLOW_CLASSDEFS}`,
+
+  p8: `flowchart TD
+  Start([Lead manutenzione - 4 fonti]):::ext
+  G1[Egorletta: raccolta dati impianto - gestionale/sopralluogo/docs]
+  G2[Egorletta: offerta su gestionale + email]
+  Q1{Cliente accetta?}:::decision
+  Lost([Persa]):::ext
+  G3[Egorletta: inserisce contratto + PDF firmato a sistema]
+  G4["Egorletta: genera chiamate manualmente<br/>spesso senza scadenza/location/persone/ore"]:::critical
+  GG1[Giulia: workaround Excel - giri di manutenzione]:::critical
+  C1["Cristina: pianifica visita<br/>info povere - cerca a mano scadenza/storico"]:::critical
+  C2[Cristina: invia incarico via app al tecnico]
+  T1["Tecnici: esegue + rapportino + FGAS<br/>spesso senza scheda operativa per macchina"]:::critical
+  E1[Emanuele DM: legge foglio - stato 'da inviare al cliente']
+  C3[Cristina: invia al cliente + STAMPA cartacea per Ester]:::critical
+  ES1[Ester: fattura canone della visita - SDI]
+  G5[Egorletta: trasmissione FGAS periodica - rischio ritardo]:::critical
+  Q2{Impianto termico/refrigerante?}:::decision
+  G6["Egorletta: CURIT + Libretto Impianto<br/>oggi non univoco - solo a richiesta"]:::critical
+  Miss["MANCA: controllo settimanale interventi previsti vs eseguiti"]:::missing
+  Q3{60 giorni dalla scadenza?}:::decision
+  Notif[Gestionale: notifica automatica scadenza]
+  G7[Egorletta: proposta di rinnovo]
+  Endn([Manutenzione attiva]):::endnode
+  Start --> G1 --> G2 --> Q1
+  Q1 -->|no| Lost
+  Q1 -->|sì| G3 --> G4 --> C1
+  GG1 -.compensa.-> C1
+  G3 -.gap chiamate.-> GG1
+  C1 --> C2 --> T1 --> E1 --> C3 --> ES1
+  T1 -.modulo FGAS.-> G5
+  ES1 --> Q2
+  Q2 -->|sì| G6 --> Q3
+  Q2 -->|no| Q3
+  G4 -.dovrebbe alimentare.-> Miss
+  Miss -.recupero.-> C1
+  Q3 -->|sì| Notif --> G7 --> G2
+  Q3 -->|no| Endn
+  classDef critical fill:#fef2f2,stroke:#dc2626,color:#7f1d1d,stroke-width:2px,stroke-dasharray:4 2
+  classDef missing fill:#fff7ed,stroke:#9a3412,color:#7c2d12,stroke-width:2px,stroke-dasharray:6 3
+  class G1,G2,G3,G7 egorletta
+  class C2 cristina
+  class E1 edemomi
+  class ES1 ester
+  class Notif ext
+  ${FLOW_CLASSDEFS}`,
+
+  p9: `flowchart TD
+  Start([Fabbisogno commessa o sotto-scorta]):::ext
+  M1[Marco: ordine d'acquisto al fornitore]
+  F1[Fornitore: spedizione + DDT]
+  C1[Cristina: ricezione e firma DDT]
+  C2[Cristina: inserisce DDT su gestionale]
+  F2[Fornitore: invio fattura SDI]
+  E1[Ester: acquisizione fattura]
+  Q1{3-way match OK?}:::decision
+  E2[Ester: dispute fornitore]
+  E3[Ester: registra in contabilità]
+  E4[Ester: schedula pagamento]
+  Q2{Scadenza arrivata?}:::decision
+  E5[Ester: bonifico / RIBA]
+  Endn([Pagato]):::endnode
+  Start --> M1 --> F1 --> C1 --> C2 --> F2 --> E1 --> Q1
+  Q1 -->|no| E2 --> E1
+  Q1 -->|sì| E3 --> E4 --> Q2
+  Q2 -->|sì| E5 --> Endn
+  class M1 marco
+  class F1,F2 fornitore
+  class C1,C2 cristina
+  class E1,E2,E3,E4,E5 ester
+  ${FLOW_CLASSDEFS}`,
+
+  p10: `flowchart TD
+  Start([Intervento chiuso e validato]):::ext
+  C1[Cristina: prepara fascicolo fattura]
+  Q1{Commessa a consuntivo?}:::decision
+  C2[Cristina: invia consuntivo al cliente]
+  Q2{Cliente accetta consuntivo?}:::decision
+  E1[Ester: redige fattura XML SDI]
+  Q3{Casistica IVA particolare?}:::decision
+  CM[Commercialista: parere su campi contabili]
+  E2[Ester: trasmissione SDI]
+  Q4{Esito SDI}:::decision
+  E3[Ester: corregge e re-invia entro 5 gg]
+  E4[Ester: scadenza creata in scadenziario]
+  Endn([Fattura accettata]):::endnode
+  Start --> C1 --> Q1
+  Q1 -->|sì| C2 --> Q2
+  Q1 -->|no| E1
+  Q2 -->|sì| E1
+  Q2 -->|no - revisione| C2
+  E1 --> Q3
+  Q3 -->|sì| CM --> E2
+  Q3 -->|no| E2
+  E2 --> Q4
+  Q4 -->|scarto| E3 --> E2
+  Q4 -->|consegna OK| E4 --> Endn
+  class C1,C2 cristina
+  class E1,E2,E3,E4 ester
+  class CM cm
+  ${FLOW_CLASSDEFS}`,
+
+  p11: `flowchart TD
+  Start([Fattura accettata da SDI]):::ext
+  E1[Ester: scadenza in scadenziario]
+  E2[Ester: presentazione RIBA in banca]
+  Q1{Cliente paga in scadenza?}:::decision
+  E3[Ester: registra incasso e riconcilia banca]
+  Q2{Giorni di ritardo}:::decision
+  E4[Ester: sollecito bonario - email/tel]
+  E5[Ester: PEC formale]
+  G1[Giulia: escalation e decisione]
+  Endn([Partita chiusa]):::endnode
+  Mensile[Giulia + Ester: revisione mensile DSO/insoluti]
+  Start --> E1 --> E2 --> Q1
+  Q1 -->|sì| E3 --> Endn
+  Q1 -->|no| Q2
+  Q2 -->|+7 giorni| E4 --> Q1
+  Q2 -->|+15 giorni| E5 --> Q1
+  Q2 -->|+30 giorni| G1 --> Mensile --> Endn
+  class E1,E2,E3,E4,E5 ester
+  class G1,Mensile giulia
+  ${FLOW_CLASSDEFS}`,
+
+  p12: `flowchart TD
+  Start([Documento generato/ricevuto]):::ext
+  Q1{Tipo documento}:::decision
+  C1[Cristina: archivio operativo - rapportini, DDT, fogli]
+  E1[Ester: conservazione fatture SDI 10 anni]
+  E2[Ester: archivio bilanci / registri IVA]
+  G1[Egorletta: archivio FGAS, CURIT, MEPA, sicurezza, ambiente]
+  M1[Marco: archivio progetti, disegni, ENEA]
+  C2[Cristina: registro trattamenti GDPR]
+  Endn([Documento conservato a norma]):::endnode
+  Start --> Q1
+  Q1 -->|rapportini, DDT, fogli| C1 --> Endn
+  Q1 -->|fatture elettroniche| E1 --> Endn
+  Q1 -->|registri / bilanci| E2 --> Endn
+  Q1 -->|FGAS, CURIT, MEPA, sicurezza| G1 --> Endn
+  Q1 -->|progetti, disegni, ENEA| M1 --> Endn
+  Q1 -->|consensi privacy| C2 --> Endn
+  class C1,C2 cristina
+  class E1,E2 ester
+  class G1 egorletta
+  class M1 marco
+  ${FLOW_CLASSDEFS}`,
+
+  p13: `flowchart TD
+  Start([Cliente contatta - tel/email]):::cliente
+  C1[Cristina: risponde + raccoglie info]
+  Q1{Cliente nuovo?}:::decision
+  C2[Cristina: invia tariffario + richiesta cauzione]
+  CL1[Cliente: firma tariffario + paga cauzione]:::cliente
+  E1["Ester: comunica A VOCE a Cristina<br/>che la cauzione è pagata"]:::critical
+  C3["Cristina: anagrafica + allega tariffario<br/>+ campo tariffario per fatturazione corretta"]
+  C4["Cristina: apre chiamata con descrizione<br/>+ nome/contatto richiedente"]:::critical
+  C5[Cristina: pianifica nel planning del gestionale]
+  C6[Cristina: telefona al cliente per confermare]
+  T1["Tecnici: riceve via Google Calendar + App<br/>esegue + foglio + censimento + firma in app"]
+  E2[Emanuele DM: foglio in stato 'da inviare al cliente']
+  Q2{Serve preventivo?}:::decision
+  E3["Emanuele DM: bozza 'DA FARE'"]
+  AL["Alessandro/Luigi: completano preventivi 'DA FARE'<br/>tempi lunghi - ordine non garantito"]:::critical
+  C7["Cristina: invia foglio al cliente<br/>+ consuntivo se richiesto"]:::critical
+  C8["Cristina: STAMPA foglio + raccoglitore<br/>alfabetico per Ester"]:::critical
+  ES1["Ester: prende periodicamente dal raccoglitore<br/>e fattura"]:::critical
+  ES2[Ester: stampa fattura + pinza foglio + a Milena]
+  M1[Milena: controllo e sigla]
+  ES3["Ester: SDI<br/>SENZA allegato foglio di lavoro"]:::critical
+  Endn([Fattura accettata]):::endnode
+  Start --> C1 --> Q1
+  Q1 -->|sì| C2 --> CL1 --> E1 --> C3 --> C4
+  Q1 -->|no| C4
+  C4 --> C5 --> C6 --> T1 --> E2 --> Q2
+  Q2 -->|sì| E3 --> AL --> C7
+  Q2 -->|no| C7
+  C7 --> C8 --> ES1 --> ES2 --> M1 --> ES3 --> Endn
+  classDef critical fill:#fef2f2,stroke:#dc2626,color:#7f1d1d,stroke-width:2px,stroke-dasharray:4 2
+  class C1,C2,C3,C5,C6 cristina
+  class E2 edemomi
+  class E3 edemomi
+  class T1 tecnici
+  class M1 milena
+  class ES2 ester
+  ${FLOW_CLASSDEFS}`,
+
+  p14: `flowchart TD
+  Start([Bozza 'DA FARE' da P13]):::ext
+  AL1["Alessandro/Luigi: apertura periodica<br/>elenco preventivi 'DA FARE'"]:::critical
+  AL2[AL/LU: lettura foglio + note tecnico]
+  Q1{Info sufficienti?}:::decision
+  AL3[AL/LU: chiamata al tecnico]
+  AL4["AL/LU: redazione preventivo<br/>materiale spesso NON codificato"]:::critical
+  AL5[AL/LU: invio preventivo al cliente]
+  Q2{Cliente accetta?}:::decision
+  Lost([Persa]):::ext
+  AL6[AL/LU: apertura commessa + ordini]
+  F1[Fornitore: DDT consegna materiale]
+  C1[Cristina: carico DDT - riga commessa verde]
+  Q3{Tutto materiale arrivato?}:::decision
+  C2["Cristina: 'commessa ferma'<br/>spesso falsi negativi"]:::critical
+  Miss1["MANCA: routine settimanale<br/>commesse aperte da pianificare"]:::missing
+  C3["Cristina: pianifica commessa<br/>competenze/durata/persone non strutturate"]:::critical
+  Miss2["MANCA: comunicazione stato avanzamento al cliente"]:::missing
+  T1[Tecnici: esegue + foglio di lavoro firmato]
+  Q4{Commessa conclusa?}:::decision
+  E1["Emanuele DM: stato 'da inviare al cliente'<br/>rischio accumulo fogli"]:::critical
+  C4[Cristina: invia fogli al cliente + STAMPA per Ester]:::critical
+  ES1[Ester: fattura + stampa]
+  M1[Milena: controlla e sigla]
+  ES2["Ester: SDI<br/>fattura tardiva rispetto a fine commessa"]:::critical
+  Endn([Commessa fatturata]):::endnode
+
+  Start --> AL1 --> AL2 --> Q1
+  Q1 -->|no| AL3 --> AL4
+  Q1 -->|sì| AL4
+  AL4 --> AL5 --> Q2
+  Q2 -->|no| Lost
+  Q2 -->|sì| AL6 --> F1 --> C1 --> Q3
+  Q3 -->|no| C2
+  Q3 -->|sì| Miss1
+  C2 -.discusso in riunione.-> Miss1
+  Miss1 --> C3 --> Miss2 --> T1 --> Q4
+  Q4 -->|no - più interventi| T1
+  Q4 -->|sì| E1 --> C4 --> ES1 --> M1 --> ES2 --> Endn
+  classDef critical fill:#fef2f2,stroke:#dc2626,color:#7f1d1d,stroke-width:2px,stroke-dasharray:4 2
+  classDef missing fill:#fff7ed,stroke:#9a3412,color:#7c2d12,stroke-width:2px,stroke-dasharray:6 3
+  class AL2,AL3,AL5,AL6 alessandro
+  class F1 fornitore
+  class C1 cristina
+  class T1 tecnici
+  class M1 milena
+  class ES1 ester
+  ${FLOW_CLASSDEFS}`
+};
+
+// ---------- State ----------
+let currentId = PROCESSES[0].id;
+let view = "process"; // "process" | "people"
+let activePeople = new Set(Object.keys(PEOPLE));
+
+// ---------- DOM ----------
+const navEl = document.getElementById('nav');
+const navViewsEl = document.getElementById('nav-views');
+const peopleFiltersEl = document.getElementById('people-filters');
+const mainEl = document.getElementById('main');
+
+// Build view selector
+function buildViews(){
+  navViewsEl.innerHTML = "";
+  const views = [
+    { id:"process", label:"Per processo" },
+    { id:"people",  label:"Per persona" }
+  ];
+  views.forEach(v=>{
+    const it = document.createElement('div');
+    it.className = 'nav-item' + (view===v.id?' active':'');
+    it.innerHTML = `<span class="num">${v.id==="process"?"P":"R"}</span><span>${v.label}</span>`;
+    it.onclick = ()=>{ view = v.id; buildViews(); buildNav(); render(); };
+    navViewsEl.appendChild(it);
+  });
+}
+
+// Build navigation
+function buildNav(){
+  navEl.innerHTML = "";
+  if(view==="people"){
+    const note = document.createElement('div');
+    note.style.cssText = "padding:8px 12px;font-size:12px;color:var(--muted)";
+    note.textContent = "Vista: scheda di responsabilità per ciascuna persona, raggruppata per processo.";
+    navEl.appendChild(note);
+    return;
+  }
+  PROCESSES.forEach((p,idx)=>{
+    const item = document.createElement('div');
+    item.className = 'nav-item' + (p.id===currentId?' active':'');
+    item.innerHTML = `<span class="num">${idx+1}</span><span>${p.title}</span>`;
+    item.onclick = ()=>{ currentId = p.id; buildNav(); render(); window.scrollTo({top:0,behavior:'smooth'}); };
+    navEl.appendChild(item);
+  });
+}
+
+// Build people filters
+function buildPeopleFilters(){
+  peopleFiltersEl.innerHTML = "";
+  Object.entries(PEOPLE).forEach(([k,p])=>{
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" data-person="${k}" ${activePeople.has(k)?'checked':''}><span class="legend-dot" style="background:${p.color}"></span><span>${p.name}</span>`;
+    lbl.querySelector('input').addEventListener('change',(e)=>{
+      const key = e.target.dataset.person;
+      if(e.target.checked) activePeople.add(key); else activePeople.delete(key);
+      render();
+    });
+    peopleFiltersEl.appendChild(lbl);
+  });
+}
+window.setAllPersons = (v)=>{
+  if(v) activePeople = new Set(Object.keys(PEOPLE));
+  else activePeople = new Set();
+  document.querySelectorAll('#people-filters input').forEach(i=>i.checked=v);
+  render();
+};
+
+// Render helpers
+function personPill(key){
+  const p = PEOPLE[key];
+  return `<span class="person-pill" style="background:${p.bg};color:${p.color}">
+    <span class="person-init" style="background:${p.color}">${p.init}</span>
+    ${p.name}
+  </span>`;
+}
+function laneLabel(key){
+  const p = PEOPLE[key];
+  return `<div class="lane-label" style="background:${p.bg};color:${p.color}">
+    <span>${p.name}</span><span class="lane-role">${p.role}</span>
+  </div>`;
+}
+function stepCard(activity){
+  const p = PEOPLE[activity.person];
+  const dimmed = activePeople.has(activity.person)?'':'dimmed';
+  return `<div class="step ${dimmed}" style="border-color:${p.color}33">
+    <span class="step-num" style="background:${p.color}">${activity.n}</span>
+    <span>${activity.what}</span>
+  </div>`;
+}
+
+// Build swimlane: group activities by person, preserving order
+function renderSwimlane(p){
+  const order = [];
+  const grouped = {};
+  p.activities.forEach(a=>{
+    if(!grouped[a.person]){ grouped[a.person]=[]; order.push(a.person); }
+    grouped[a.person].push(a);
+  });
+  let html = `<div class="swimlane"><h4>Flusso per persona</h4><div class="lanes">`;
+  order.forEach(pk=>{
+    html += `<div class="lane">${laneLabel(pk)}<div class="steps">`;
+    grouped[pk].forEach((a,i)=>{
+      html += stepCard(a);
+      if(i<grouped[pk].length-1) html += `<span class="arrow">→</span>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+function sistemaClass(s){
+  if(!s) return "sys-default";
+  const v = s.toLowerCase();
+  if(v.includes("gestionale") && v.includes("excel")) return "sys-excel";
+  if(v.includes("excel")) return "sys-excel";
+  if(v.includes("app")) return "sys-app";
+  if(v.includes("cartace") || v.includes("stampa")) return "sys-cartaceo";
+  if(v.includes("portale")) return "sys-portale";
+  if(v.includes("email") || v.includes("pec")) return "sys-email";
+  if(v.includes("gestionale")) return "sys-gestionale";
+  return "sys-default";
+}
+
+function renderActivities(p){
+  const rows = p.activities.map(a=>{
+    const dim = activePeople.has(a.person) ? '' : 'dimmed';
+    const issueClass = a.critico ? 'has-issue' : '';
+    const missingClass = a.missing ? 'is-missing' : '';
+    const tags = [];
+    if(a.missing) tags.push(`<span class="meta-tag missing">✕ Routine mancante</span>`);
+    if(a.sistema) tags.push(`<span class="meta-tag ${sistemaClass(a.sistema)}">⚙ ${a.sistema}</span>`);
+    if(a.tempo)   tags.push(`<span class="meta-tag tempo">⏱ ${a.tempo}</span>`);
+    if(a.critico) tags.push(`<span class="meta-tag critico">⚠ ${a.critico.motivo}</span>`);
+    const metaRow = tags.length ? `<div class="meta-tags">${tags.join("")}</div>` : "";
+    const fix = a.critico && a.critico.suggerimento ? `<div style="margin-top:6px;font-size:12px;color:#15803d"><strong>Fix:</strong> ${a.critico.suggerimento}</div>` : "";
+    return `<tr class="${dim} ${issueClass} ${missingClass}">
+      <td class="num-cell">#${a.n}</td>
+      <td>${personPill(a.person)}</td>
+      <td class="activity">${a.what}${metaRow}</td>
+      <td>${a.desc}${fix}</td>
+      <td><strong>In:</strong> ${a.inputs}<br><strong>Out:</strong> ${a.outputs}</td>
+    </tr>`;
+  }).join("");
+  return `<table class="raci">
+    <thead><tr><th>#</th><th>Responsabile</th><th>Attività · Sistema · Tempi</th><th>Descrizione e fix</th><th>Input / Output</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function renderIssues(p){
+  if(!p.issues || !p.issues.length) return "";
+  return p.issues.map(iss=>`
+    <div class="issue-banner">
+      <div class="issue-title">${iss.title}</div>
+      <p class="issue-desc">${iss.desc}</p>
+      <p class="issue-fix"><strong>Come sistemarlo:</strong> ${iss.fix}</p>
+    </div>`).join("");
+}
+
+function renderDocs(p){
+  return `<div class="docs-grid">${p.docs.map(d=>`
+    <div class="doc-card">
+      <div class="doc-name">${d.name}</div>
+      <div class="doc-when">${d.when}</div>
+    </div>`).join("")}</div>`;
+}
+
+function renderProcess(){
+  const p = PROCESSES.find(x=>x.id===currentId);
+  if(!p){ mainEl.innerHTML = `<div class="empty">Processo non trovato</div>`; return; }
+  const idx = PROCESSES.findIndex(x=>x.id===currentId)+1;
+  // Persons involved
+  const involved = Array.from(new Set(p.activities.map(a=>a.person)));
+  const flow = FLOWS[currentId] || "";
+  mainEl.innerHTML = `
+    <div class="breadcrumb">Processo ${idx} di ${PROCESSES.length}</div>
+    <h2 class="process-title">${p.title}</h2>
+    <p class="process-desc">${p.desc}</p>
+    <div class="meta-row">
+      <span class="pill"><strong>Trigger:</strong>&nbsp;${p.trigger}</span>
+      <span class="pill"><strong>Output:</strong>&nbsp;${p.output}</span>
+      <span class="pill"><strong>SLA:</strong>&nbsp;${p.sla}</span>
+    </div>
+    <div class="meta-row">${involved.map(personPill).join("")}</div>
+
+    ${p.issues && p.issues.length ? `<section class="block">
+      <h3>Punti critici e fix proposti</h3>
+      ${renderIssues(p)}
+    </section>` : ""}
+
+    ${flow ? `<section class="block">
+      <h3>Diagramma di flusso</h3>
+      <div class="flowchart-wrap">
+        <div class="mermaid" id="mermaid-${currentId}">${flow}</div>
+        <div class="flow-legend">${involved.map(personPill).join("")}</div>
+      </div>
+    </section>` : ""}
+
+    <section class="block">
+      <h3>Flusso per persona (swimlane)</h3>
+      ${renderSwimlane(p)}
+    </section>
+
+    <section class="block">
+      <h3>Attività in dettaglio</h3>
+      ${renderActivities(p)}
+    </section>
+
+    <section class="block">
+      <h3>Documenti coinvolti</h3>
+      ${renderDocs(p)}
+    </section>
+  `;
+  // Render Mermaid diagram (if present)
+  if(flow && window.mermaid){
+    try{
+      window.mermaid.run({ nodes: [document.getElementById(`mermaid-${currentId}`)] });
+    }catch(e){ console.warn("Mermaid render error:", e); }
+  }
+}
+
+function renderPeople(){
+  // For each filtered person, render a card with all their duties grouped by process
+  const keys = Object.keys(PEOPLE).filter(k=>activePeople.has(k));
+  if(!keys.length){
+    mainEl.innerHTML = `<div class="breadcrumb">Vista per persona</div>
+      <h2 class="process-title">Responsabilità per persona</h2>
+      <p class="process-desc">Nessuna persona selezionata. Attiva i filtri a sinistra per visualizzare le schede.</p>`;
+    return;
+  }
+  const cards = keys.map(k=>{
+    const p = PEOPLE[k];
+    // Collect duties per process
+    const duties = [];
+    PROCESSES.forEach(proc=>{
+      const acts = proc.activities.filter(a=>a.person===k);
+      if(acts.length) duties.push({ proc:proc.title, acts });
+    });
+    if(!duties.length){
+      return `<div class="person-card" style="border-top-color:${p.color}">
+        <div class="person-head">
+          <div class="avatar" style="background:${p.color}">${p.init}</div>
+          <div><h4 class="person-name">${p.name}</h4><p class="person-role">${p.role}</p></div>
+        </div>
+        <p style="color:var(--muted);font-size:13px;margin:0">Nessuna attività mappata in questa vista.</p>
+      </div>`;
+    }
+    const blocks = duties.map(d=>`
+      <div class="duty-block">
+        <div class="duty-process">${d.proc}</div>
+        <ul class="duty-list">${d.acts.map(a=>`<li>${a.what}</li>`).join("")}</ul>
+      </div>`).join("");
+    return `<div class="person-card" style="border-top-color:${p.color}">
+      <div class="person-head">
+        <div class="avatar" style="background:${p.color}">${p.init}</div>
+        <div><h4 class="person-name">${p.name}</h4><p class="person-role">${p.role}</p></div>
+      </div>
+      <div class="person-duties">${blocks}</div>
+    </div>`;
+  }).join("");
+
+  mainEl.innerHTML = `
+    <div class="breadcrumb">Vista per persona</div>
+    <h2 class="process-title">Responsabilità per persona</h2>
+    <p class="process-desc">Per ciascuna persona, l'elenco completo delle attività di cui è responsabile, raggruppate per processo. Usa i filtri a sinistra per restringere la vista.</p>
+    <div class="people-grid">${cards}</div>
+  `;
+}
+
+function render(){
+  if(view==="process") renderProcess();
+  else renderPeople();
+}
+
+// Init Mermaid
+if(window.mermaid){
+  window.mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: true, padding: 12 },
+    themeVariables: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontSize: '13px',
+      primaryColor: '#f1f5f9',
+      primaryTextColor: '#0f172a',
+      primaryBorderColor: '#cbd5e1',
+      lineColor: '#64748b'
+    }
+  });
+}
+
+// Init
+buildViews();
+buildNav();
+buildPeopleFilters();
+render();
+</script>
+</body>
+</html>
